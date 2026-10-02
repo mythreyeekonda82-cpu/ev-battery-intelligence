@@ -4,7 +4,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 
-from .database import init_db
+from .database import init_db, SessionLocal
+from .seed_demo_users import create_demo_users, create_fleet
 
 # Routers
 from .routers.auth import router as auth_router
@@ -59,6 +60,14 @@ app.add_middleware(
 @app.on_event("startup")
 def startup_event():
     init_db()
+
+    db = SessionLocal()
+
+    try:
+        create_demo_users(db)
+        create_fleet(db)
+    finally:
+        db.close()
 
 
 # ============================================================
