@@ -1,0 +1,998 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>VoltIQ | EV Battery Intelligence</title>
+
+    <meta
+        name="description"
+        content="EV Battery Intelligence and Fleet Monitoring Platform"
+    >
+
+    <link rel="stylesheet" href="/styles.css">
+</head>
+
+<body>
+
+<!-- =========================================================
+     LOGIN
+========================================================= -->
+
+<div id="loginScreen" class="login-screen">
+
+    <div class="login-glow glow-one"></div>
+    <div class="login-glow glow-two"></div>
+
+    <div class="login-card">
+
+        <div class="brand brand-login">
+            <div class="brand-icon">⚡</div>
+
+            <div>
+                <h1>Volt<span>IQ</span></h1>
+                <p>EV BATTERY INTELLIGENCE</p>
+            </div>
+        </div>
+
+        <div class="login-heading">
+            <h2>Welcome back</h2>
+            <p>Sign in to your battery intelligence console.</p>
+        </div>
+
+        <div class="role-switch">
+            <button
+                id="userRoleBtn"
+                class="role-btn active"
+                type="button"
+                onclick="selectRole('user')"
+            >
+                User
+            </button>
+
+            <button
+                id="adminRoleBtn"
+                class="role-btn"
+                type="button"
+                onclick="selectRole('admin')"
+            >
+                Admin
+            </button>
+        </div>
+
+        <form id="loginForm">
+
+            <label>Email address</label>
+
+            <div class="input-box">
+                <span>✉</span>
+
+                <input
+                    id="loginEmail"
+                    type="email"
+                    placeholder="user@evbattery.demo"
+                    required
+                >
+            </div>
+
+            <label>Password</label>
+
+            <div class="input-box">
+                <span>●</span>
+
+                <input
+                    id="loginPassword"
+                    type="password"
+                    placeholder="Enter password"
+                    required
+                >
+            </div>
+
+            <div id="loginMessage" class="login-message"></div>
+
+            <button class="login-btn" type="submit">
+                Enter Command Center
+                <span>→</span>
+            </button>
+
+        </form>
+
+        <div class="demo-login">
+
+            <strong>Demo access</strong>
+
+            <p id="demoCredentials">
+                User: user@evbattery.demo / user1234
+            </p>
+
+        </div>
+
+        <div class="login-footer">
+            Battery Intelligence Platform · Demo Environment
+        </div>
+
+    </div>
+</div>
+
+
+<!-- =========================================================
+     APPLICATION
+========================================================= -->
+
+<div id="app" class="app hidden">
+
+    <!-- SIDEBAR -->
+
+    <aside class="sidebar">
+
+        <div class="sidebar-top">
+
+            <div class="brand">
+
+                <div class="brand-icon">⚡</div>
+
+                <div>
+                    <h1>Volt<span>IQ</span></h1>
+                    <p>BATTERY INTELLIGENCE</p>
+                </div>
+
+            </div>
+
+            <div class="live-pill">
+                <span></span>
+                SYSTEM LIVE
+            </div>
+
+        </div>
+
+
+        <nav class="navigation">
+
+            <p class="nav-title">COMMAND CENTER</p>
+
+            <a href="#dashboard" class="nav-item active">
+                <span>◈</span>
+                Dashboard
+            </a>
+
+            <a href="#batteries" class="nav-item">
+                <span>▣</span>
+                Battery Fleet
+            </a>
+
+            <a href="#analytics" class="nav-item">
+                <span>◒</span>
+                Analytics
+            </a>
+
+            <a href="#alerts" class="nav-item">
+                <span>⚠</span>
+                Alerts
+                <b id="alertBadge">2</b>
+            </a>
+
+            <p class="nav-title">OPERATIONS</p>
+
+            <a href="#charging" class="nav-item">
+                <span>⌁</span>
+                Charging Network
+            </a>
+
+            <a href="#reports" class="nav-item">
+                <span>▤</span>
+                Reports
+            </a>
+
+            <a href="#settings" class="nav-item">
+                <span>⚙</span>
+                Settings
+            </a>
+
+        </nav>
+
+
+        <div class="sidebar-bottom">
+
+            <div class="system-card">
+
+                <div class="system-card-top">
+                    <span>System Health</span>
+                    <strong>98%</strong>
+                </div>
+
+                <div class="progress">
+                    <span style="width:98%"></span>
+                </div>
+
+                <small>
+                    All monitoring services operational
+                </small>
+
+            </div>
+
+
+            <div class="user-mini">
+
+                <div class="avatar">
+                    <span id="avatarLetter">U</span>
+                </div>
+
+                <div>
+                    <strong id="loggedUser">Operator</strong>
+                    <small id="loggedRole">Fleet User</small>
+                </div>
+
+                <button onclick="logout()" title="Logout">
+                    ↪
+                </button>
+
+            </div>
+
+        </div>
+
+    </aside>
+
+
+    <!-- MAIN CONTENT -->
+
+    <main class="main-content">
+
+        <!-- TOP BAR -->
+
+        <header class="topbar">
+
+            <div class="mobile-brand">
+                <div class="brand-icon">⚡</div>
+                <strong>Volt<span>IQ</span></strong>
+            </div>
+
+            <div class="topbar-search">
+
+                <span>⌕</span>
+
+                <input
+                    type="text"
+                    placeholder="Search batteries, vehicles, alerts..."
+                    id="searchInput"
+                >
+
+            </div>
+
+            <div class="topbar-actions">
+
+                <div class="connection-status">
+                    <span></span>
+                    BMS CONNECTED
+                </div>
+
+                <button class="icon-button" title="Notifications">
+                    🔔
+                    <i></i>
+                </button>
+
+                <div class="top-avatar" id="topAvatar">
+                    U
+                </div>
+
+            </div>
+
+        </header>
+
+
+        <!-- DASHBOARD -->
+
+        <section id="dashboard" class="dashboard-section">
+
+            <div class="page-heading">
+
+                <div>
+                    <div class="eyebrow">
+                        FLEET INTELLIGENCE / LIVE
+                    </div>
+
+                    <h2>
+                        Battery Intelligence
+                        <span>Command Center</span>
+                    </h2>
+
+                    <p>
+                        Real-time health, thermal and performance
+                        intelligence across your EV battery fleet.
+                    </p>
+                </div>
+
+                <div class="heading-actions">
+
+                    <button class="secondary-btn" onclick="refreshData()">
+                        ↻ Refresh
+                    </button>
+
+                    <button class="primary-btn" onclick="generateReport()">
+                        ＋ Generate Report
+                    </button>
+
+                </div>
+
+            </div>
+
+
+            <!-- HERO -->
+
+            <div class="hero-panel">
+
+                <div class="hero-copy">
+
+                    <div class="status-label">
+                        <span></span>
+                        VEHICLE ONLINE
+                    </div>
+
+                    <h1>
+                        EV Fleet
+                        <strong>Alpha-01</strong>
+                    </h1>
+
+                    <p>
+                        Intelligent battery monitoring with
+                        predictive health analysis.
+                    </p>
+
+                    <div class="hero-metrics">
+
+                        <div>
+                            <span>Estimated Range</span>
+                            <strong id="heroRange">311 km</strong>
+                        </div>
+
+                        <div>
+                            <span>Battery Temp.</span>
+                            <strong id="heroTemp">33.4°C</strong>
+                        </div>
+
+                        <div>
+                            <span>Drive Mode</span>
+                            <strong id="driveMode">ECO</strong>
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <div class="hero-vehicle">
+
+                    <div class="vehicle-glow"></div>
+
+                    <div class="car">
+
+                        <div class="car-roof"></div>
+
+                        <div class="car-window front"></div>
+                        <div class="car-window rear"></div>
+
+                        <div class="car-body">
+
+                            <div class="car-light left"></div>
+                            <div class="car-light right"></div>
+
+                            <div class="car-grille"></div>
+
+                        </div>
+
+                        <div class="wheel wheel-left"></div>
+                        <div class="wheel wheel-right"></div>
+
+                    </div>
+
+                    <div class="vehicle-label">
+                        VOLTIQ EV PLATFORM
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- KPI GRID -->
+
+            <div class="kpi-grid">
+
+                <div class="kpi-card">
+
+                    <div class="kpi-icon green">
+                        ◉
+                    </div>
+
+                    <div class="kpi-content">
+                        <span>Fleet Average SOC</span>
+                        <strong id="fleetSoc">82.0%</strong>
+                        <small class="positive">↑ 2.4% today</small>
+                    </div>
+
+                </div>
+
+
+                <div class="kpi-card">
+
+                    <div class="kpi-icon blue">
+                        ♢
+                    </div>
+
+                    <div class="kpi-content">
+                        <span>Fleet Average SOH</span>
+                        <strong id="fleetSoh">95.3%</strong>
+                        <small class="positive">Stable</small>
+                    </div>
+
+                </div>
+
+
+                <div class="kpi-card warning-card">
+
+                    <div class="kpi-icon orange">
+                        ⚠
+                    </div>
+
+                    <div class="kpi-content">
+                        <span>Weakest Battery</span>
+                        <strong id="weakKpi">B-04</strong>
+                        <small id="weakKpiText">
+                            Needs attention
+                        </small>
+                    </div>
+
+                </div>
+
+
+                <div class="kpi-card">
+
+                    <div class="kpi-icon purple">
+                        ⚡
+                    </div>
+
+                    <div class="kpi-content">
+                        <span>Pack Voltage</span>
+                        <strong id="packVoltage">398.6 V</strong>
+                        <small>Within operating range</small>
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- BATTERY FLEET -->
+
+            <section id="batteries" class="content-section">
+
+                <div class="section-heading">
+
+                    <div>
+                        <span class="section-label">
+                            BATTERY FLEET
+                        </span>
+
+                        <h3>
+                            Four-Pack Intelligence
+                        </h3>
+                    </div>
+
+                    <div class="fleet-summary">
+                        <span class="fleet-dot"></span>
+                        4 battery packs monitored
+                    </div>
+
+                </div>
+
+
+                <div id="batteryGrid" class="battery-grid"></div>
+
+            </section>
+
+
+            <!-- ANALYTICS -->
+
+            <section id="analytics" class="analytics-grid">
+
+                <div class="panel analytics-panel">
+
+                    <div class="panel-header">
+
+                        <div>
+                            <span class="section-label">
+                                PERFORMANCE
+                            </span>
+
+                            <h3>
+                                Live Power Output
+                            </h3>
+                        </div>
+
+                        <div class="live-indicator">
+                            <span></span>
+                            LIVE
+                        </div>
+
+                    </div>
+
+                    <div class="chart-container">
+
+                        <canvas id="powerChart"></canvas>
+
+                    </div>
+
+                    <div class="chart-footer">
+
+                        <div>
+                            <span>Current Power</span>
+                            <strong id="packPower">31.8 kW</strong>
+                        </div>
+
+                        <div>
+                            <span>Peak Today</span>
+                            <strong>47.2 kW</strong>
+                        </div>
+
+                        <div>
+                            <span>Efficiency</span>
+                            <strong>94.7%</strong>
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <!-- SELECTED BATTERY -->
+
+                <div class="panel selected-panel">
+
+                    <div class="panel-header">
+
+                        <div>
+                            <span class="section-label">
+                                DEEP ANALYSIS
+                            </span>
+
+                            <h3 id="selectedBatteryName">
+                                Battery Pack 04
+                            </h3>
+                        </div>
+
+                        <div id="selectedStatus" class="status-badge weak">
+                            NEEDS ATTENTION
+                        </div>
+
+                    </div>
+
+
+                    <div class="health-score">
+
+                        <div class="gauge">
+
+                            <svg viewBox="0 0 120 120">
+
+                                <circle
+                                    class="gauge-bg"
+                                    cx="60"
+                                    cy="60"
+                                    r="48"
+                                ></circle>
+
+                                <circle
+                                    id="gaugeCircle"
+                                    class="gauge-progress"
+                                    cx="60"
+                                    cy="60"
+                                    r="48"
+                                ></circle>
+
+                            </svg>
+
+                            <div class="gauge-value">
+                                <strong id="selectedSoh">88.7%</strong>
+                                <span>SOH</span>
+                            </div>
+
+                        </div>
+
+
+                        <div class="health-copy">
+
+                            <strong id="healthTitle">
+                                Degraded Health
+                            </strong>
+
+                            <p id="healthReason">
+                                Elevated temperature, high cycle
+                                count and cell imbalance detected.
+                            </p>
+
+                            <div class="health-bar">
+                                <span id="sohBar"></span>
+                            </div>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="detail-grid">
+
+                        <div>
+                            <span>State of Charge</span>
+                            <strong id="selectedSoc">76.8%</strong>
+                        </div>
+
+                        <div>
+                            <span>Voltage</span>
+                            <strong id="selectedVoltage">395.6 V</strong>
+                        </div>
+
+                        <div>
+                            <span>Temperature</span>
+                            <strong id="selectedTemp">38.9°C</strong>
+                        </div>
+
+                        <div>
+                            <span>Cycles</span>
+                            <strong id="selectedCycles">612</strong>
+                        </div>
+
+                        <div>
+                            <span>Cell Delta</span>
+                            <strong id="selectedDelta">43 mV</strong>
+                        </div>
+
+                        <div>
+                            <span>Estimated Range</span>
+                            <strong id="selectedRange">291 km</strong>
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </section>
+
+
+            <!-- CELL MONITOR -->
+
+            <section class="cell-section">
+
+                <div class="panel">
+
+                    <div class="panel-header">
+
+                        <div>
+                            <span class="section-label">
+                                CELL MONITOR
+                            </span>
+
+                            <h3>
+                                192-Cell Voltage Distribution
+                            </h3>
+                        </div>
+
+                        <div class="cell-legend">
+
+                            <span>
+                                <i class="normal"></i>
+                                Normal
+                            </span>
+
+                            <span>
+                                <i class="warning"></i>
+                                Warning
+                            </span>
+
+                            <span>
+                                <i class="critical"></i>
+                                Critical
+                            </span>
+
+                        </div>
+
+                    </div>
+
+                    <div id="cellGrid" class="cell-grid"></div>
+
+                </div>
+
+            </section>
+
+
+            <!-- ALERTS -->
+
+            <section id="alerts" class="alerts-grid">
+
+                <div class="panel">
+
+                    <div class="panel-header">
+
+                        <div>
+                            <span class="section-label">
+                                PROTECTION
+                            </span>
+
+                            <h3>
+                                Active Alerts
+                            </h3>
+                        </div>
+
+                        <button class="text-btn" onclick="clearAlerts()">
+                            Clear all
+                        </button>
+
+                    </div>
+
+
+                    <div id="alertsList" class="alerts-list">
+
+                        <div class="alert-item warning">
+
+                            <div class="alert-icon">⚠</div>
+
+                            <div>
+                                <strong>
+                                    Battery B-04 thermal warning
+                                </strong>
+
+                                <p>
+                                    Temperature reached 38.9°C.
+                                    Monitor thermal conditions.
+                                </p>
+
+                                <small>
+                                    2 minutes ago
+                                </small>
+                            </div>
+
+                        </div>
+
+
+                        <div class="alert-item info">
+
+                            <div class="alert-icon">ℹ</div>
+
+                            <div>
+                                <strong>
+                                    Cell imbalance detected
+                                </strong>
+
+                                <p>
+                                    B-04 cell delta is currently
+                                    43 mV.
+                                </p>
+
+                                <small>
+                                    8 minutes ago
+                                </small>
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+                <!-- QUICK ACTIONS -->
+
+                <div class="panel quick-panel">
+
+                    <div class="panel-header">
+
+                        <div>
+                            <span class="section-label">
+                                RESPONSE
+                            </span>
+
+                            <h3>
+                                Quick Actions
+                            </h3>
+                        </div>
+
+                    </div>
+
+
+                    <div class="quick-actions">
+
+                        <button onclick="sendWhatsApp()">
+                            <span>◉</span>
+                            <div>
+                                <strong>WhatsApp Alert</strong>
+                                <small>Notify maintenance team</small>
+                            </div>
+                            →
+                        </button>
+
+
+                        <button onclick="sendEmail()">
+                            <span>✉</span>
+                            <div>
+                                <strong>Email Report</strong>
+                                <small>Send battery summary</small>
+                            </div>
+                            →
+                        </button>
+
+
+                        <button onclick="generateReport()">
+                            <span>▤</span>
+                            <div>
+                                <strong>Generate Report</strong>
+                                <small>Create fleet report</small>
+                            </div>
+                            →
+                        </button>
+
+
+                        <button onclick="runDiagnostics()">
+                            <span>⌁</span>
+                            <div>
+                                <strong>Run Diagnostics</strong>
+                                <small>Analyze all battery packs</small>
+                            </div>
+                            →
+                        </button>
+
+                    </div>
+
+                </div>
+
+            </section>
+
+
+            <!-- CHARGING -->
+
+            <section id="charging" class="charging-section">
+
+                <div class="panel charging-panel">
+
+                    <div class="charging-copy">
+
+                        <span class="section-label">
+                            CHARGING NETWORK
+                        </span>
+
+                        <h3>
+                            Nearest Charging Stations
+                        </h3>
+
+                        <p>
+                            Charging network integration is ready
+                            for GPS and live station APIs.
+                        </p>
+
+                        <button class="primary-btn" onclick="findStations()">
+                            Find Nearby Stations →
+                        </button>
+
+                    </div>
+
+
+                    <div class="map-placeholder">
+
+                        <div class="map-grid"></div>
+
+                        <div class="map-route"></div>
+
+                        <div class="map-pin pin-one">⚡</div>
+                        <div class="map-pin pin-two">⚡</div>
+                        <div class="map-pin pin-three">⚡</div>
+
+                        <div class="location-pin">
+                            ●
+                        </div>
+
+                        <span class="map-label">
+                            LIVE MAP READY
+                        </span>
+
+                    </div>
+
+                </div>
+
+            </section>
+
+
+            <!-- REPORTS -->
+
+            <section id="reports" class="content-section">
+
+                <div class="section-heading">
+
+                    <div>
+                        <span class="section-label">
+                            REPORTING
+                        </span>
+
+                        <h3>
+                            Fleet Intelligence Reports
+                        </h3>
+                    </div>
+
+                </div>
+
+
+                <div class="report-grid">
+
+                    <div class="report-card">
+
+                        <span>▤</span>
+
+                        <div>
+                            <strong>Weekly Battery Report</strong>
+                            <p>Health, thermal and cycle analysis.</p>
+                        </div>
+
+                        <button onclick="generateReport()">Generate</button>
+
+                    </div>
+
+
+                    <div class="report-card">
+
+                        <span>◒</span>
+
+                        <div>
+                            <strong>Battery Degradation</strong>
+                            <p>SOH trends and degradation indicators.</p>
+                        </div>
+
+                        <button onclick="generateReport()">Generate</button>
+
+                    </div>
+
+
+                    <div class="report-card">
+
+                        <span>⚠</span>
+
+                        <div>
+                            <strong>Protection Events</strong>
+                            <p>Faults, alerts and safety events.</p>
+                        </div>
+
+                        <button onclick="generateReport()">Generate</button>
+
+                    </div>
+
+                </div>
+
+            </section>
+
+
+            <!-- FOOTER -->
+
+            <footer class="footer">
+
+                <div>
+                    <strong>VoltIQ</strong>
+                    EV Battery Intelligence Platform
+                </div>
+
+                <div>
+                    Last synchronization:
+                    <strong id="syncTime">--:--:--</strong>
+                </div>
+
+                <div>
+                    © 2026 VoltIQ
+                </div>
+
+            </footer>
+
+        </section>
+
+    </main>
+
+</div>
+
+
+<script src="/app.js"></script>
+
+</body>
+</html>
