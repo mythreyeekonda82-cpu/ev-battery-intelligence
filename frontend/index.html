@@ -178,7 +178,178 @@
                 <span>⌁</span>
                 Charging Network
             </a>
+<section id="settings" class="page-section">
 
+    <div class="section-heading">
+
+        <div>
+            <span class="eyebrow">
+                SYSTEM CONTROL
+            </span>
+
+            <h2>Battery Settings</h2>
+
+            <p>
+                Configure battery protection,
+                notification and communication preferences.
+            </p>
+        </div>
+
+    </div>
+
+
+    <div class="settings-grid">
+
+        <div class="settings-card">
+
+            <h3>Battery Protection</h3>
+
+            <label>
+                Temperature Warning °C
+
+                <input
+                    id="settingTempWarning"
+                    type="number"
+                    value="40"
+                    step="0.1"
+                >
+            </label>
+
+
+            <label>
+                Temperature Critical °C
+
+                <input
+                    id="settingTempCritical"
+                    type="number"
+                    value="45"
+                    step="0.1"
+                >
+            </label>
+
+
+            <label>
+                Minimum Battery SOH %
+
+                <input
+                    id="settingMinSOH"
+                    type="number"
+                    value="85"
+                    step="0.1"
+                >
+            </label>
+
+
+            <label>
+                Maximum Current A
+
+                <input
+                    id="settingMaxCurrent"
+                    type="number"
+                    value="150"
+                    step="1"
+                >
+            </label>
+
+        </div>
+
+
+        <div class="settings-card">
+
+            <h3>Email Notifications</h3>
+
+            <label class="switch-row">
+
+                <input
+                    id="settingEmailEnabled"
+                    type="checkbox"
+                    checked
+                >
+
+                Enable email alerts
+
+            </label>
+
+
+            <label>
+                Email Address
+
+                <input
+                    id="settingEmail"
+                    type="email"
+                    placeholder="your@email.com"
+                >
+            </label>
+
+
+            <button
+                class="btn primary"
+                onclick="sendRealEmail()"
+            >
+                Send Test Email
+            </button>
+
+        </div>
+
+
+        <div class="settings-card">
+
+            <h3>WhatsApp Notifications</h3>
+
+            <label class="switch-row">
+
+                <input
+                    id="settingWhatsAppEnabled"
+                    type="checkbox"
+                >
+
+                Enable WhatsApp alerts
+
+            </label>
+
+
+            <label>
+                WhatsApp Number
+
+                <input
+                    id="settingWhatsApp"
+                    type="text"
+                    placeholder="919876543210"
+                >
+            </label>
+
+
+            <button
+                class="btn primary"
+                onclick="sendRealWhatsApp()"
+            >
+                Send Test WhatsApp
+            </button>
+
+        </div>
+
+    </div>
+
+
+    <div class="settings-actions">
+
+        <button
+            class="btn primary"
+            onclick="saveSettings()"
+        >
+            Save Settings
+        </button>
+
+        <button
+            class="btn"
+            onclick="loadSettings()"
+        >
+            Reload Settings
+        </button>
+
+    </div>
+
+</section>
             <a href="#reports" class="nav-item">
                 <span>▤</span>
                 Reports
@@ -263,7 +434,7 @@
 
                 <div class="connection-status">
                     <span></span>
-                    BMS CONNECTED
+                    BMS NOT CONNECTED
                 </div>
 
                 <button class="icon-button" title="Notifications">

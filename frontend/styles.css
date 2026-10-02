@@ -3165,3 +3165,26 @@ select {
     font-weight: 500 !important;
     letter-spacing: 0.01em;
 }
+/* =========================================================
+   BMS NOT CONNECTED STATUS
+========================================================= */
+
+.voltiq-bms-not-connected {
+    color: #ff9f43 !important;
+    font-size: 11px !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.03em !important;
+}
+/* =========================================================
+   TOP BMS CONNECTION STATUS
+========================================================= */
+
+.connection-status {
+    color: #ff9f43 !important;
+    font-weight: 700 !important;
+}
+
+.connection-status span {
+    background: #ff9f43 !important;
+    box-shadow: 0 0 10px rgba(255, 159, 67, 0.55) !important;
+}

@@ -1041,6 +1041,12 @@ function renderVehicleCards(list = vehicles) {
                             )}°C
                         </strong>
                     </div>
+                    <div>
+                      <small>BMS</small>
+                       <strong class="voltiq-bms-not-connected">
+                         NOT CONNECTED
+                       </strong>
+                     </div>
 
                 </div>
 
@@ -1251,10 +1257,17 @@ function renderBatteryExplanation(battery) {
             "Battery parameters are currently within the normal operating range.";
 
     } else if (status === "WARNING") {
-
+            if (Number(battery.soh ?? 100) < 85) {
         message =
-            "Battery parameters require monitoring. Review temperature and state-of-health trends.";
-
+            `WARNING TRIGGER: LOW BATTERY HEALTH — SOH is ${Number(battery.soh ?? 0).toFixed(1)}%, below the 85% warning threshold.`;
+    } else if (Number(battery.temperature ?? 25) >= 40) {
+        message =
+            `WARNING TRIGGER: ELEVATED BATTERY TEMPERATURE — Battery temperature is ${Number(battery.temperature ?? 0).toFixed(1)}°C, at or above the 40°C warning threshold.`;
+    } else {
+        message =
+            "WARNING TRIGGER: BATTERY CELL IMBALANCE — Cell voltage balance requires attention.";
+    }
+       
     } else {
 
         message =

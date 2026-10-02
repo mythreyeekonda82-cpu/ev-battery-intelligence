@@ -1,5 +1,6 @@
-from typing import Optional
+import os
 
+import httpx
 from fastapi import APIRouter, HTTPException
 
 from ..schemas import NotificationRequest
@@ -20,12 +21,9 @@ def notification_test():
 
 
 @router.post("/send")
-def send_notification(data: NotificationRequest):
+async def send_notification(data: NotificationRequest):
     """
-    Demo notification endpoint.
-
-    Email and WhatsApp providers will be connected
-    after the backend is running correctly.
+    Send a notification through the requested channel.
     """
 
     if not data.email and not data.whatsapp:
@@ -34,27 +32,31 @@ def send_notification(data: NotificationRequest):
             detail="Provide an email address or WhatsApp number."
         )
 
+    results = {}
+
+    if data.whatsapp:
+        results["whatsapp"] = await send_whatsapp_message(
+            whatsapp=data.whatsapp,
+            message=data.message
+        )
+
+    if data.email:
+        results["email"] = {
+            "status": "queued",
+            "message": "Email provider integration will be added separately."
+        }
+
     return {
         "success": True,
-        "message": "Notification request received.",
-        "email": data.email,
-        "whatsapp": data.whatsapp,
-        "notification": data.message
+        "results": results
     }
 
 
 @router.post("/email")
 def send_email(
     message: str,
-    email: Optional[str] = None
+    email: str | None = None
 ):
-    """
-    Email endpoint.
-
-    This currently validates and accepts the request.
-    SMTP/provider integration will be added separately.
-    """
-
     if not email:
         raise HTTPException(
             status_code=400,
@@ -71,27 +73,97 @@ def send_email(
 
 
 @router.post("/whatsapp")
-def send_whatsapp(
+async def send_whatsapp(
     message: str,
-    whatsapp: Optional[str] = None
+    whatsapp: str | None = None
 ):
-    """
-    WhatsApp endpoint.
-
-    Actual WhatsApp Business API credentials are required
-    before messages can be sent automatically.
-    """
-
     if not whatsapp:
         raise HTTPException(
             status_code=400,
             detail="WhatsApp number is required."
         )
 
-    return {
-        "success": True,
-        "channel": "whatsapp",
-        "recipient": whatsapp,
-        "message": message,
-        "status": "queued"
+    return await send_whatsapp_message(
+        whatsapp=whatsapp,
+        message=message
+    )
+
+
+async def send_whatsapp_message(
+    whatsapp: str,
+    message: str
+):
+    """
+    Send a WhatsApp message through Meta WhatsApp Cloud API.
+
+    The actual API credentials are read from environment variables.
+    """
+
+    access_token = os.getenv("WHATSAPP_ACCESS_TOKEN")
+    phone_number_id = os.getenv("WHATSAPP_PHONE_NUMBER_ID")
+    api_version = os.getenv(
+        "WHATSAPP_API_VERSION",
+        "v20.0"
+    )
+
+    if not access_token or not phone_number_id:
+        raise HTTPException(
+            status_code=503,
+            detail=(
+                "WhatsApp Cloud API is not configured yet. "
+                "Add WHATSAPP_ACCESS_TOKEN and "
+                "WHATSAPP_PHONE_NUMBER_ID."
+            )
+        )
+
+    url = (
+        f"https://graph.facebook.com/"
+        f"{api_version}/"
+        f"{phone_number_id}/messages"
+    )
+
+    payload = {
+        "messaging_product": "whatsapp",
+        "to": whatsapp,
+        "type": "text",
+        "text": {
+            "body": message
+        }
     }
+
+    headers = {
+        "Authorization": f"Bearer {access_token}",
+        "Content-Type": "application/json"
+    }
+
+    try:
+        async with httpx.AsyncClient(timeout=20.0) as client:
+            response = await client.post(
+                url,
+                json=payload,
+                headers=headers
+            )
+
+        if response.status_code >= 400:
+            raise HTTPException(
+                status_code=502,
+                detail={
+                    "message": "WhatsApp Cloud API rejected the message.",
+                    "provider_status": response.status_code,
+                    "provider_response": response.json()
+                }
+            )
+
+        return {
+            "success": True,
+            "channel": "whatsapp",
+            "recipient": whatsapp,
+            "status": "sent",
+            "provider_response": response.json()
+        }
+
+    except httpx.RequestError as exc:
+        raise HTTPException(
+            status_code=502,
+            detail=f"Unable to reach WhatsApp Cloud API: {exc}"
+        )
