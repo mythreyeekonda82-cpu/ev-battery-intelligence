@@ -1,76 +1,85 @@
 from backend.app.database import SessionLocal, init_db
 from backend.app.models import User, Vehicle, Battery
-from backend.app.security import hash_password
+from backend.app.security import hash_password, verify_password
 
 
 # ============================================================
-# CREATE DEMO USERS
+# CREATE OR UPDATE DEMO USERS
 # ============================================================
 
 def create_demo_users(db):
-    """
-    Create the demo user and admin accounts if they don't exist.
-    """
 
-    user = (
-        db.query(User)
-        .filter(
-            User.email == "user@evbattery.demo"
-        )
-        .first()
-    )
+    accounts = [
+        {
+            "email": "user@evbattery.demo",
+            "name": "EV Battery User",
+            "password": "user1234",
+            "role": "user"
+        },
+        {
+            "email": "admin@evbattery.demo",
+            "name": "EV Battery Admin",
+            "password": "admin1234",
+            "role": "admin"
+        }
+    ]
 
-    if user is None:
-        user = User(
-            email="user@evbattery.demo",
-            name="EV Battery User",
-            hashed_password=hash_password(
-                "user1234"
-            ),
-            role="user",
-            is_active=True,
-        )
+    result = {}
 
-        db.add(user)
-        db.commit()
-        db.refresh(user)
+    for account in accounts:
 
-    admin = (
-        db.query(User)
-        .filter(
-            User.email == "admin@evbattery.demo"
-        )
-        .first()
-    )
-
-    if admin is None:
-        admin = User(
-            email="admin@evbattery.demo",
-            name="EV Battery Admin",
-            hashed_password=hash_password(
-                "admin1234"
-            ),
-            role="admin",
-            is_active=True,
+        user = (
+            db.query(User)
+            .filter(
+                User.email == account["email"]
+            )
+            .first()
         )
 
-        db.add(admin)
-        db.commit()
-        db.refresh(admin)
+        if user is None:
 
-    return user, admin
+            user = User(
+                email=account["email"],
+                name=account["name"],
+                hashed_password=hash_password(
+                    account["password"]
+                ),
+                role=account["role"],
+                is_active=True
+            )
+
+            db.add(user)
+            db.commit()
+            db.refresh(user)
+
+        else:
+
+            if not verify_password(
+                account["password"],
+                user.hashed_password
+            ):
+
+                user.hashed_password = hash_password(
+                    account["password"]
+                )
+
+            user.name = account["name"]
+            user.role = account["role"]
+            user.is_active = True
+
+            db.commit()
+            db.refresh(user)
+
+        result[account["role"]] = user
+
+    return result["user"], result["admin"]
 
 
 # ============================================================
-# CREATE 56 VEHICLES
+# CREATE 56 VEHICLES AND 56 BATTERIES
 # ============================================================
 
 def create_fleet(db):
-    """
-    Create Vehicle 01 through Vehicle 56.
-
-    Each vehicle receives exactly one battery.
-    """
 
     user = (
         db.query(User)
@@ -84,85 +93,41 @@ def create_fleet(db):
 
     for number in range(1, 57):
 
-        vehicle_id = (
-            f"EV-{number:03d}"
-        )
-
-        battery_id = (
-            f"BAT-{number:03d}"
-        )
-
-        # ----------------------------------------------------
-        # Find existing vehicle
-        # ----------------------------------------------------
+        vehicle_id = f"EV-{number:03d}"
+        battery_id = f"BAT-{number:03d}"
 
         vehicle = (
             db.query(Vehicle)
             .filter(
-                Vehicle.vehicle_id
-                == vehicle_id
+                Vehicle.vehicle_id == vehicle_id
             )
             .first()
         )
 
         if vehicle is None:
 
-            # Assign the demo user to Vehicle 01.
-            #
-            # The admin can access every vehicle.
-            # A normal user will only see their assigned vehicle.
-
-            owner_id = None
-
-            if number == 1:
-                owner_id = user.id
-
             vehicle = Vehicle(
                 vehicle_id=vehicle_id,
-
-                name=(
-                    f"Vehicle "
-                    f"{number:02d}"
-                ),
-
-                model=(
-                    f"EV Model "
-                    f"{((number - 1) % 5) + 1}"
-                ),
-
-                owner_id=owner_id,
-
+                name=f"Vehicle {number:02d}",
+                model=f"EV Model {((number-1) % 5)+1}",
+                owner_id=user.id if number == 1 else None,
                 battery_count=1,
-
-                status="ACTIVE",
+                status="ACTIVE"
             )
 
             db.add(vehicle)
-            db.commit()
-            db.refresh(vehicle)
+            db.flush()
 
             created_count += 1
 
-        else:
+        elif number == 1:
 
-            # Vehicle already exists.
-            # Make sure Vehicle 01 remains assigned
-            # to the demo user.
-
-            if number == 1:
-                vehicle.owner_id = user.id
-                db.commit()
-
-
-        # ----------------------------------------------------
-        # Find existing battery
-        # ----------------------------------------------------
+            vehicle.owner_id = user.id
 
         battery = (
             db.query(Battery)
             .filter(
-                Battery.battery_id
-                == battery_id
+                Battery.battery_id == battery_id
             )
             .first()
         )
@@ -171,37 +136,21 @@ def create_fleet(db):
 
             battery = Battery(
                 battery_id=battery_id,
-
                 vehicle_id=vehicle.id,
-
-                name=(
-                    f"Battery Pack "
-                    f"{number:02d}"
-                ),
-
+                name=f"Battery Pack {number:02d}",
                 soc=80.0,
-
                 soh=95.0,
-
                 voltage=400.0,
-
                 current=0.0,
-
                 temperature=30.0,
-
                 cycles=0,
-
                 health="HEALTHY",
-
-                status="ACTIVE",
+                status="ACTIVE"
             )
 
             db.add(battery)
 
         else:
-
-            # Ensure the battery is linked
-            # to the correct vehicle.
 
             battery.vehicle_id = vehicle.id
 
@@ -216,113 +165,40 @@ def create_fleet(db):
 
 def main():
 
-    print()
-    print(
-        "=============================================="
-    )
-    print(
-        " EV BATTERY INTELLIGENCE - DATABASE SEED"
-    )
-    print(
-        "=============================================="
-    )
+    print("===================================")
+    print(" VOLTIQ DATABASE INITIALIZATION")
+    print("===================================")
 
-    # Create database tables.
     init_db()
 
     db = SessionLocal()
 
     try:
 
-        # ----------------------------------------------------
-        # USERS
-        # ----------------------------------------------------
+        user, admin = create_demo_users(db)
 
-        user, admin = create_demo_users(
-            db
-        )
+        print("\nUSER ACCOUNT:")
+        print(user.email)
 
-        print()
-        print(
-            "Demo users ready."
-        )
+        print("\nADMIN ACCOUNT:")
+        print(admin.email)
 
-        print(
-            f"USER  : {user.email}"
-        )
+        created = create_fleet(db)
 
-        print(
-            f"ADMIN : {admin.email}"
-        )
+        vehicle_count = db.query(Vehicle).count()
+        battery_count = db.query(Battery).count()
 
+        print("\nFLEET INFORMATION")
 
-        # ----------------------------------------------------
-        # FLEET
-        # ----------------------------------------------------
+        print("Vehicles:", vehicle_count)
+        print("Batteries:", battery_count)
+        print("New vehicles:", created)
 
-        created_count = create_fleet(
-            db
-        )
+        if vehicle_count >= 56 and battery_count >= 56:
+            print("\nSUCCESS: VOLTIQ DATABASE READY")
 
-        print()
-        print(
-            f"Fleet ready: 56 vehicles"
-        )
-
-        print(
-            f"New vehicles created: "
-            f"{created_count}"
-        )
-
-
-        # ----------------------------------------------------
-        # VERIFY
-        # ----------------------------------------------------
-
-        vehicle_count = (
-            db.query(Vehicle)
-            .count()
-        )
-
-        battery_count = (
-            db.query(Battery)
-            .count()
-        )
-
-        print()
-        print(
-            "Database verification:"
-        )
-
-        print(
-            f"Vehicles : {vehicle_count}"
-        )
-
-        print(
-            f"Batteries: {battery_count}"
-        )
-
-        print()
-
-        if vehicle_count >= 56:
-            print(
-                "SUCCESS: 56 vehicles are ready."
-            )
         else:
-            print(
-                "WARNING: Fleet is incomplete."
-            )
-
-        if battery_count >= 56:
-            print(
-                "SUCCESS: 56 batteries are ready."
-            )
-        else:
-            print(
-                "WARNING: Battery fleet is incomplete."
-            )
-
-        print()
+            print("\nWARNING: CHECK DATABASE")
 
     finally:
 

@@ -4,12 +4,15 @@ from sqlalchemy.orm import Session
 from .. import models, schemas, security
 from ..database import get_db
 
-
 router = APIRouter(
     prefix="/api/auth",
     tags=["Authentication"]
 )
 
+
+# ============================================================
+# REGISTER
+# ============================================================
 
 @router.post("/register")
 def register(
@@ -17,11 +20,11 @@ def register(
     db: Session = Depends(get_db)
 ):
 
+    email = payload.email.strip().lower()
+
     existing = (
         db.query(models.User)
-        .filter(
-            models.User.email == payload.email
-        )
+        .filter(models.User.email == email)
         .first()
     )
 
@@ -32,12 +35,13 @@ def register(
         )
 
     user = models.User(
-        email=payload.email,
-        full_name=payload.full_name,
+        email=email,
+        name=payload.full_name,
         hashed_password=security.hash_password(
             payload.password
         ),
-        role="user"
+        role="user",
+        is_active=True
     )
 
     db.add(user)
@@ -45,20 +49,24 @@ def register(
     db.refresh(user)
 
     settings = models.UserSettings(
-        user_id=user.id,
-        email_address=user.email
+        user_id=user.id
     )
 
     db.add(settings)
     db.commit()
 
     return {
+        "success": True,
         "id": user.id,
         "email": user.email,
-        "full_name": user.name,
+        "name": user.name,
         "role": user.role
     }
 
+
+# ============================================================
+# LOGIN
+# ============================================================
 
 @router.post("/login")
 def login(
@@ -66,24 +74,33 @@ def login(
     db: Session = Depends(get_db)
 ):
 
+    email = payload.email.strip().lower()
+
     user = (
         db.query(models.User)
-        .filter(
-            models.User.email == payload.email
-        )
+        .filter(models.User.email == email)
         .first()
     )
 
     if not user:
+
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect email or password."
+        )
+
+    if not user.is_active:
+
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Account is inactive."
         )
 
     if not security.verify_password(
         payload.password,
         user.hashed_password
     ):
+
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect email or password."
@@ -95,8 +112,10 @@ def login(
     )
 
     return {
+        "success": True,
         "access_token": token,
         "token_type": "bearer",
+
         "user": {
             "id": user.id,
             "email": user.email,
@@ -106,6 +125,10 @@ def login(
     }
 
 
+# ============================================================
+# CURRENT USER
+# ============================================================
+
 @router.get("/me")
 def me(
     current_user=Depends(
@@ -114,8 +137,9 @@ def me(
 ):
 
     return {
+        "success": True,
         "id": current_user.id,
         "email": current_user.email,
-        "name": current_user.full_name,
+        "name": current_user.name,
         "role": current_user.role
     }

@@ -1,10 +1,16 @@
 import hashlib
 import os
 import secrets
+from pathlib import Path
 from datetime import datetime, timedelta
 
+from dotenv import load_dotenv
+
 from fastapi import Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordBearer
+from fastapi.security import (
+    HTTPBearer,
+    HTTPAuthorizationCredentials
+)
 from jose import JWTError, jwt
 from sqlalchemy.orm import Session
 
@@ -12,21 +18,40 @@ from .database import get_db
 from . import models
 
 
-SECRET_KEY = os.getenv(
-    "JWT_SECRET",
-    "CHANGE_THIS_SECRET_KEY_FOR_PRODUCTION"
-)
+# ============================================================
+# LOAD ENVIRONMENT VARIABLES
+# ============================================================
+
+BASE_DIR = Path(__file__).resolve().parents[2]
+load_dotenv(BASE_DIR / ".env")
+
+
+# ============================================================
+# JWT CONFIGURATION
+# ============================================================
+
+SECRET_KEY = os.getenv("JWT_SECRET")
+
+if not SECRET_KEY:
+    raise RuntimeError(
+        "JWT_SECRET is missing from the .env file."
+    )
 
 ALGORITHM = "HS256"
 
 ACCESS_TOKEN_EXPIRE_MINUTES = 24 * 60
 
 
-oauth2_scheme = OAuth2PasswordBearer(
-    tokenUrl="/api/auth/login",
-    auto_error=False
-)
+# ============================================================
+# AUTHENTICATION SCHEME
+# ============================================================
 
+oauth2_scheme = HTTPBearer(auto_error=False)
+
+
+# ============================================================
+# PASSWORD HASHING
+# ============================================================
 
 def hash_password(password: str) -> str:
 
@@ -39,11 +64,7 @@ def hash_password(password: str) -> str:
         120000
     )
 
-    return (
-        salt.hex()
-        + ":"
-        + key.hex()
-    )
+    return salt.hex() + ":" + key.hex()
 
 
 def verify_password(
@@ -52,11 +73,8 @@ def verify_password(
 ) -> bool:
 
     try:
-
         salt_hex, key_hex = stored_password.split(":")
-
         salt = bytes.fromhex(salt_hex)
-
         expected = bytes.fromhex(key_hex)
 
         actual = hashlib.pbkdf2_hmac(
@@ -66,20 +84,17 @@ def verify_password(
             120000
         )
 
-        return secrets.compare_digest(
-            actual,
-            expected
-        )
+        return secrets.compare_digest(actual, expected)
 
     except Exception:
-
         return False
 
 
-def create_access_token(
-    email: str,
-    role: str
-):
+# ============================================================
+# JWT TOKEN GENERATION
+# ============================================================
+
+def create_access_token(email: str, role: str):
 
     expire = datetime.utcnow() + timedelta(
         minutes=ACCESS_TOKEN_EXPIRE_MINUTES
@@ -98,8 +113,12 @@ def create_access_token(
     )
 
 
+# ============================================================
+# GET CURRENT AUTHENTICATED USER
+# ============================================================
+
 def get_current_user(
-    token: str | None = Depends(oauth2_scheme),
+    credentials: HTTPAuthorizationCredentials | None = Depends(oauth2_scheme),
     db: Session = Depends(get_db)
 ):
 
@@ -108,11 +127,12 @@ def get_current_user(
         detail="Please login first."
     )
 
-    if not token:
+    if not credentials:
         raise credentials_error
 
-    try:
+    token = credentials.credentials
 
+    try:
         payload = jwt.decode(
             token,
             SECRET_KEY,
@@ -125,30 +145,29 @@ def get_current_user(
             raise credentials_error
 
     except JWTError:
-
         raise credentials_error
 
     user = (
         db.query(models.User)
-        .filter(
-            models.User.email == email
-        )
+        .filter(models.User.email == email)
         .first()
     )
 
     if not user:
-
         raise credentials_error
 
     return user
 
+
+# ============================================================
+# ADMIN AUTHORIZATION
+# ============================================================
 
 def require_admin(
     current_user=Depends(get_current_user)
 ):
 
     if current_user.role != "admin":
-
         raise HTTPException(
             status_code=403,
             detail="Administrator access required."

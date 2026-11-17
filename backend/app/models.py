@@ -414,3 +414,48 @@ class NotificationLog(Base):
         default=datetime.utcnow,
         nullable=False,
     )
+from sqlalchemy import Boolean, Float, Integer, String, DateTime, Text, ForeignKey
+from sqlalchemy.orm import relationship
+from datetime import datetime
+
+
+class BatteryIntelligenceEvent(Base):
+    __tablename__ = "battery_intelligence_events"
+
+    id = Column(Integer, primary_key=True, index=True)
+    battery_id = Column(String, index=True, nullable=False)
+    vehicle_id = Column(String, index=True, nullable=True)
+
+    event_type = Column(String, index=True, nullable=False)
+    severity = Column(String, default="INFO")
+    message = Column(Text, nullable=False)
+
+    risk_score = Column(Float, nullable=True)
+    start_value = Column(Float, nullable=True)
+    end_value = Column(Float, nullable=True)
+    duration_seconds = Column(Float, nullable=True)
+
+    details = Column(Text, nullable=True)
+    resolved = Column(Boolean, default=False)
+
+    created_at = Column(DateTime, default=datetime.utcnow)
+    resolved_at = Column(DateTime, nullable=True)
+
+
+class BatterySensorState(Base):
+    __tablename__ = "battery_sensor_states"
+
+    id = Column(Integer, primary_key=True, index=True)
+    battery_id = Column(String, unique=True, index=True, nullable=False)
+
+    last_voltage = Column(Float, nullable=True)
+    last_current = Column(Float, nullable=True)
+    last_temperature = Column(Float, nullable=True)
+
+    voltage_repeat_count = Column(Integer, default=0)
+    current_repeat_count = Column(Integer, default=0)
+    temperature_repeat_count = Column(Integer, default=0)
+
+    last_seen = Column(DateTime, default=datetime.utcnow)
+    reliability_status = Column(String, default="UNKNOWN")
+    updated_at = Column(DateTime, default=datetime.utcnow)   

@@ -7,7 +7,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from ..database import get_db
-from ..models import Vehicle
+from ..models import Vehicle, Telemetry
 from ..security import get_current_user
 from ..simulator.engine import get_simulation_engine
 
@@ -267,7 +267,8 @@ def receive_esp32_telemetry(
     data: ESP32Telemetry,
     authorized: bool = Depends(
         verify_esp32_api_key
-    )
+    ),
+    db: Session = Depends(get_db)
 ):
     device_id = data.device_id.strip()
 
@@ -277,26 +278,61 @@ def receive_esp32_telemetry(
             detail="Device ID cannot be empty."
         )
 
-    latest_esp32_data[device_id] = {
+    # Prepare the latest hardware reading
+    reading = {
         **data.model_dump(),
         "device_id": device_id
     }
 
+    # Save reading in SQLite
+    telemetry_record = Telemetry(
+        battery_id=device_id,
+        voltage=data.voltage,
+        current=data.current,
+        temperature=(
+            data.temperature
+            if data.temperature is not None
+            else 0.0
+        ),
+        soc=data.soc,
+        soh=data.soh,
+        cycles=0,
+        power_kw=data.power / 1000
+    )
+
+    try:
+        db.add(telemetry_record)
+        db.commit()
+        db.refresh(telemetry_record)
+
+    except Exception:
+        db.rollback()
+
+        raise HTTPException(
+            status_code=500,
+            detail="Failed to save telemetry data."
+        )
+
+    # Keep latest reading available in memory
+    latest_esp32_data[device_id] = reading
+
     return {
         "success": True,
-        "message": "ESP32 data received successfully.",
+        "message": "ESP32 data received and saved successfully.",
         "device_id": device_id,
-        "data": latest_esp32_data[device_id]
+        "data": reading,
+        "timestamp": telemetry_record.timestamp.isoformat()
     }
 
 
 # ==========================================
-# READ REAL ESP32 SENSOR DATA
+# READ REAL ESP32 SENSOR DATA FROM DATABASE
 # ==========================================
 
 @router.get("/device")
 def get_esp32_telemetry(
-    current_user=Depends(get_current_user)
+    current_user=Depends(get_current_user),
+    db: Session = Depends(get_db)
 ):
     if current_user.role != "admin":
         raise HTTPException(
@@ -304,8 +340,45 @@ def get_esp32_telemetry(
             detail="Only administrators can access hardware telemetry."
         )
 
+    # Get all saved readings, newest first
+    records = (
+        db.query(Telemetry)
+        .order_by(
+            Telemetry.timestamp.desc(),
+            Telemetry.id.desc()
+        )
+        .all()
+    )
+
+    devices = {}
+
+    # Keep only the latest reading for each device
+    for record in records:
+
+        device_id = record.battery_id
+
+        if device_id not in devices:
+
+            devices[device_id] = {
+                "device_id": device_id,
+                "voltage": record.voltage,
+                "current": record.current,
+                "power": round(
+                    (record.power_kw or 0) * 1000,
+                    3
+                ),
+                "soc": record.soc,
+                "soh": record.soh,
+                "temperature": record.temperature,
+                "timestamp": (
+                    record.timestamp.isoformat()
+                    if record.timestamp
+                    else None
+                )
+            }
+
     return {
         "success": True,
-        "count": len(latest_esp32_data),
-        "devices": latest_esp32_data
+        "count": len(devices),
+        "devices": devices
     }

@@ -1,0 +1,928 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#101827">
+    <title>VoltIQ | Battery Intelligence</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<!-- LOGIN SCREEN -->
+<div id="loginScreen" class="login-screen">
+    <div class="login-card">
+        <div class="brand-mark">V</div>
+        <h1>VoltIQ</h1>
+        <p>Battery Intelligence Platform</p>
+
+        <form id="loginForm">
+            <label for="email">Email Address</label>
+            <input
+                type="email"
+                id="email"
+                placeholder="Enter your email"
+                autocomplete="username"
+                required
+            >
+
+            <label for="password">Password</label>
+            <input
+                type="password"
+                id="password"
+                placeholder="Enter your password"
+                autocomplete="current-password"
+                required
+            >
+
+            <button type="submit" id="loginButton">Sign In</button>
+            <p id="loginError" class="error-message"></p>
+        </form>
+    </div>
+</div>
+
+<!-- MAIN APPLICATION -->
+<div id="app" class="app-layout" style="display:none;">
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+
+        <div class="sidebar-brand">
+            <div class="brand-mark">V</div>
+            <div>
+                <h2>VoltIQ</h2>
+                <span>BATTERY INTELLIGENCE</span>
+            </div>
+        </div>
+
+        <div class="sidebar-label">WORKSPACE</div>
+
+        <nav class="sidebar-nav">
+
+            <button class="nav-item active" data-page="overview">
+                <span class="nav-icon">▦</span>
+                <span>Overview</span>
+            </button>
+
+            <button class="nav-item" data-page="monitor">
+                <span class="nav-icon">▣</span>
+                <span>Battery Monitor</span>
+            </button>
+
+            <button class="nav-item" data-page="alerts">
+                <span class="nav-icon">♧</span>
+                <span>Alerts & Notifications</span>
+                <span id="alertBadge" class="nav-badge">0</span>
+            </button>
+
+            <button class="nav-item" data-page="charging">
+                <span class="nav-icon">↕</span>
+                <span>Charging & Discharging</span>
+            </button>
+
+            <button class="nav-item" data-page="reports">
+                <span class="nav-icon">▤</span>
+                <span>Reports</span>
+            </button>
+
+            <button class="nav-item" data-page="settings">
+                <span class="nav-icon">⚙</span>
+                <span>Settings</span>
+            </button>
+
+        </nav>
+
+        <!-- USER GUIDE AT THE BOTTOM -->
+        <div class="sidebar-bottom">
+
+            <div class="sidebar-label">LEARN</div>
+
+            <button class="nav-item guide-nav-item" data-page="guide">
+                <span class="nav-icon">ⓘ</span>
+                <span>Battery User Guide</span>
+                <span class="guide-arrow">›</span>
+            </button>
+
+            <div class="sidebar-user">
+                <div class="user-avatar">U</div>
+
+                <div class="user-details">
+                    <strong id="sidebarUserName">VoltIQ User</strong>
+                    <span id="sidebarUserRole">Battery Account</span>
+                </div>
+
+                <button
+                    id="logoutButton"
+                    class="logout-button"
+                    type="button"
+                    title="Sign out"
+                >↪</button>
+            </div>
+
+        </div>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="main-content">
+
+        <!-- TOP HEADER -->
+        <header class="topbar">
+
+            <div>
+                <h1 id="pageTitle">Overview</h1>
+                <p id="pageSubtitle">
+                    Your battery performance at a glance.
+                </p>
+            </div>
+
+            <div class="topbar-right">
+
+                <div class="connection-status" id="connectionStatus">
+                    <span class="status-dot"></span>
+                    <span id="connectionText">Not connected</span>
+                </div>
+
+                <div class="topbar-date" id="currentDate"></div>
+
+            </div>
+        </header>
+
+        <!-- DEMO AND LIVE MODE -->
+        <section class="mode-panel">
+
+            <div class="mode-heading">
+
+                <div>
+                    <span class="eyebrow">OPERATING MODE</span>
+                    <h2>Choose your monitoring mode</h2>
+                    <p>
+                        Demo Mode displays sample readings.
+                        Live Mode displays actual ESP32 readings.
+                    </p>
+                </div>
+
+                <div class="mode-switch">
+
+                    <button
+                        id="demoModeButton"
+                        class="mode-button active"
+                        type="button"
+                    >
+                        Demo Mode
+                    </button>
+
+                    <button
+                        id="liveModeButton"
+                        class="mode-button"
+                        type="button"
+                    >
+                        Live Mode
+                    </button>
+
+                </div>
+
+            </div>
+
+            <div id="modeNotice" class="mode-notice demo-notice">
+                <strong>DEMO MODE</strong>
+                <span>
+                    Sample readings are being displayed.
+                    These are not readings from your physical battery.
+                </span>
+            </div>
+
+        </section>
+
+        <!-- ================================= -->
+        <!-- OVERVIEW PAGE -->
+        <!-- ================================= -->
+
+        <section id="page-overview" class="page-section active">
+
+            <div class="section-heading">
+
+                <div>
+                    <h2>Battery Overview</h2>
+                    <p>
+                        Monitor your 12V, 7Ah lead-acid battery.
+                    </p>
+                </div>
+
+                <span class="battery-spec-tag">
+                    12V · 7Ah · Lead-Acid
+                </span>
+
+            </div>
+
+            <!-- BATTERY METRICS -->
+            <div class="metric-grid">
+
+                <article class="metric-card">
+
+                    <div class="metric-top">
+                        <span>State of Charge</span>
+                        <span class="metric-icon">🔋</span>
+                    </div>
+
+                    <div class="metric-value" id="overviewSoc">
+                        --<small>%</small>
+                    </div>
+
+                    <div class="progress-track">
+                        <div id="socProgress" class="progress-fill"></div>
+                    </div>
+
+                    <p id="socStatus">Waiting for readings</p>
+
+                </article>
+
+                <article class="metric-card">
+
+                    <div class="metric-top">
+                        <span>Battery Voltage</span>
+                        <span class="metric-icon">⚡</span>
+                    </div>
+
+                    <div class="metric-value" id="overviewVoltage">
+                        --<small> V</small>
+                    </div>
+
+                    <p>Measured battery voltage</p>
+
+                </article>
+
+                <article class="metric-card">
+
+                    <div class="metric-top">
+                        <span>Current</span>
+                        <span class="metric-icon">↯</span>
+                    </div>
+
+                    <div class="metric-value" id="overviewCurrent">
+                        --<small> A</small>
+                    </div>
+
+                    <p>Measured battery current</p>
+
+                </article>
+
+                <article class="metric-card">
+
+                    <div class="metric-top">
+                        <span>Temperature</span>
+                        <span class="metric-icon">🌡</span>
+                    </div>
+
+                    <div class="metric-value" id="overviewTemperature">
+                        --<small> °C</small>
+                    </div>
+
+                    <p id="temperatureStatus">
+                        Waiting for readings
+                    </p>
+
+                </article>
+
+            </div>
+
+            <!-- HEALTH AND POWER -->
+            <div class="overview-grid">
+
+                <article class="panel health-panel">
+
+                    <div class="panel-heading">
+
+                        <div>
+                            <span class="eyebrow">BATTERY CONDITION</span>
+                            <h3>Battery Health Analysis</h3>
+                        </div>
+
+                        <span id="healthBadge" class="status-pill neutral">
+                            Awaiting data
+                        </span>
+
+                    </div>
+
+                    <div class="health-score-area">
+
+                        <div class="health-ring" id="healthRing">
+
+                            <div>
+                                <strong id="overviewSoh">--</strong>
+                                <span>SOH %</span>
+                            </div>
+
+                        </div>
+
+                        <div class="health-description">
+                            <h4 id="healthTitle">
+                                Health analysis pending
+                            </h4>
+
+                            <p id="healthDescription">
+                                Battery health will appear when a valid
+                                SOH reading is available.
+                            </p>
+                        </div>
+
+                    </div>
+
+                    <div class="health-details">
+
+                        <div>
+                            <span>Battery type</span>
+                            <strong>Lead-Acid</strong>
+                        </div>
+
+                        <div>
+                            <span>Rated voltage</span>
+                            <strong>12V</strong>
+                        </div>
+
+                        <div>
+                            <span>Rated capacity</span>
+                            <strong>7Ah</strong>
+                        </div>
+
+                    </div>
+
+                </article>
+
+                <article class="panel">
+
+                    <div class="panel-heading">
+
+                        <div>
+                            <span class="eyebrow">POWER</span>
+                            <h3>Power Overview</h3>
+                        </div>
+
+                    </div>
+
+                    <div class="power-value" id="overviewPower">
+                        -- <small>kW</small>
+                    </div>
+
+                    <p class="muted-text">
+                        Calculated or reported battery power
+                    </p>
+
+                    <div class="power-info">
+
+                        <div>
+                            <span>Operating state</span>
+                            <strong id="operatingState">Unknown</strong>
+                        </div>
+
+                        <div>
+                            <span>Last update</span>
+                            <strong id="lastUpdated">No data</strong>
+                        </div>
+
+                    </div>
+
+                </article>
+
+            </div>
+
+            <!-- RECENT ALERTS -->
+            <article class="panel">
+
+                <div class="panel-heading">
+
+                    <div>
+                        <span class="eyebrow">LATEST EVENTS</span>
+                        <h3>Recent Battery Alerts</h3>
+                    </div>
+
+                    <button
+                        class="text-button"
+                        data-page="alerts"
+                        type="button"
+                    >
+                        View all alerts →
+                    </button>
+
+                </div>
+
+                <div id="overviewAlerts" class="empty-state">
+                    No alerts to display.
+                </div>
+
+            </article>
+
+        </section>
+
+        <!-- ================================= -->
+        <!-- BATTERY MONITOR PAGE -->
+        <!-- ================================= -->
+
+        <section id="page-monitor" class="page-section">
+
+            <div class="section-heading">
+
+                <div>
+                    <h2>Battery Monitor</h2>
+                    <p>
+                        Detailed electrical and thermal measurements.
+                    </p>
+                </div>
+
+            </div>
+
+            <div class="metric-grid">
+
+                <article class="metric-card">
+                    <span>Voltage</span>
+                    <div class="metric-value" id="monitorVoltage">
+                        --<small> V</small>
+                    </div>
+                </article>
+
+                <article class="metric-card">
+                    <span>Current</span>
+                    <div class="metric-value" id="monitorCurrent">
+                        --<small> A</small>
+                    </div>
+                </article>
+
+                <article class="metric-card">
+                    <span>Power</span>
+                    <div class="metric-value" id="monitorPower">
+                        --<small> kW</small>
+                    </div>
+                </article>
+
+                <article class="metric-card">
+                    <span>Temperature</span>
+                    <div class="metric-value" id="monitorTemperature">
+                        --<small> °C</small>
+                    </div>
+                </article>
+
+            </div>
+
+            <article class="panel">
+
+                <div class="panel-heading">
+                    <h3>Battery Technical Specifications</h3>
+                </div>
+
+                <div class="spec-grid">
+
+                    <div>
+                        <span>Battery chemistry</span>
+                        <strong>Lead-Acid</strong>
+                    </div>
+
+                    <div>
+                        <span>Nominal voltage</span>
+                        <strong>12V</strong>
+                    </div>
+
+                    <div>
+                        <span>Rated capacity</span>
+                        <strong>7Ah</strong>
+                    </div>
+
+                    <div>
+                        <span>Rated energy</span>
+                        <strong>84Wh nominal</strong>
+                    </div>
+
+                    <div>
+                        <span>Monitoring device</span>
+                        <strong>ESP32</strong>
+                    </div>
+
+                    <div>
+                        <span>Data source</span>
+                        <strong id="monitorDataSource">Demo sample</strong>
+                    </div>
+
+                </div>
+
+            </article>
+
+            <article class="panel">
+
+                <div class="panel-heading">
+                    <h3>Latest Device Reading</h3>
+                </div>
+
+                <div id="deviceReading" class="empty-state">
+                    No device reading available.
+                </div>
+
+            </article>
+
+        </section>
+
+        <!-- ================================= -->
+        <!-- ALERTS PAGE -->
+        <!-- ================================= -->
+
+        <section id="page-alerts" class="page-section">
+
+            <div class="section-heading">
+
+                <div>
+                    <h2>Alerts & Notifications</h2>
+                    <p>
+                        Review battery warnings and critical events.
+                    </p>
+                </div>
+
+            </div>
+
+            <div class="alert-summary-grid">
+
+                <div class="metric-card">
+                    <span>Total Alerts</span>
+                    <div id="totalAlerts" class="metric-value">0</div>
+                </div>
+
+                <div class="metric-card">
+                    <span>Warnings</span>
+                    <div id="warningAlerts" class="metric-value">0</div>
+                </div>
+
+                <div class="metric-card">
+                    <span>Critical Alerts</span>
+                    <div id="criticalAlerts" class="metric-value">0</div>
+                </div>
+
+            </div>
+
+            <article class="panel">
+
+                <div class="panel-heading">
+                    <h3>Alert History</h3>
+                </div>
+
+                <div id="alertsList" class="empty-state">
+                    No alerts available.
+                </div>
+
+            </article>
+
+        </section>
+
+        <!-- ================================= -->
+        <!-- CHARGING AND DISCHARGING PAGE -->
+        <!-- ================================= -->
+
+        <section id="page-charging" class="page-section">
+
+            <div class="section-heading">
+
+                <div>
+                    <h2>Charging & Discharging</h2>
+                    <p>
+                        Understand how your battery stores and supplies energy.
+                    </p>
+                </div>
+
+            </div>
+
+            <div class="metric-grid">
+
+                <article class="metric-card">
+                    <span>State of Charge</span>
+                    <div id="chargingSoc" class="metric-value">
+                        --<small>%</small>
+                    </div>
+                </article>
+
+                <article class="metric-card">
+                    <span>Current</span>
+                    <div id="chargingCurrent" class="metric-value">
+                        --<small> A</small>
+                    </div>
+                </article>
+
+                <article class="metric-card">
+                    <span>Voltage</span>
+                    <div id="chargingVoltage" class="metric-value">
+                        --<small> V</small>
+                    </div>
+                </article>
+
+            </div>
+
+            <article class="panel">
+
+                <div class="panel-heading">
+                    <h3>Operating State</h3>
+                </div>
+
+                <div id="chargingState" class="empty-state">
+                    Waiting for battery readings.
+                </div>
+
+                <p class="muted-text">
+                    Charging or discharging direction must be determined
+                    from the actual sensor wiring and current-sign convention.
+                </p>
+
+            </article>
+
+        </section>
+
+        <!-- ================================= -->
+        <!-- REPORTS PAGE -->
+        <!-- ================================= -->
+
+        <section id="page-reports" class="page-section">
+
+            <div class="section-heading">
+
+                <div>
+                    <h2>Reports</h2>
+                    <p>
+                        Review the latest available battery information.
+                    </p>
+                </div>
+
+            </div>
+
+            <article class="panel">
+
+                <div class="panel-heading">
+                    <h3>Battery Report</h3>
+                </div>
+
+                <div id="reportContent" class="empty-state">
+                    Report information will appear when readings are available.
+                </div>
+
+            </article>
+
+        </section>
+
+        <!-- ================================= -->
+        <!-- SETTINGS PAGE -->
+        <!-- ================================= -->
+
+        <section id="page-settings" class="page-section">
+
+            <div class="section-heading">
+
+                <div>
+                    <h2>Settings</h2>
+                    <p>
+                        Configure battery warning thresholds and preferences.
+                    </p>
+                </div>
+
+            </div>
+
+            <form id="settingsForm" class="panel settings-form">
+
+                <h3>Battery Warning Thresholds</h3>
+
+                <div class="settings-grid">
+
+                    <label>
+                        Temperature warning (°C)
+                        <input
+                            type="number"
+                            id="temperatureWarning"
+                            min="0"
+                            max="100"
+                            step="0.5"
+                            value="40"
+                        >
+                    </label>
+
+                    <label>
+                        Temperature critical (°C)
+                        <input
+                            type="number"
+                            id="temperatureCritical"
+                            min="0"
+                            max="120"
+                            step="0.5"
+                            value="45"
+                        >
+                    </label>
+
+                    <label>
+                        Low SOC warning (%)
+                        <input
+                            type="number"
+                            id="socWarning"
+                            min="0"
+                            max="100"
+                            step="1"
+                            value="20"
+                        >
+                    </label>
+
+                    <label>
+                        Low SOH warning (%)
+                        <input
+                            type="number"
+                            id="sohWarning"
+                            min="0"
+                            max="100"
+                            step="1"
+                            value="70"
+                        >
+                    </label>
+
+                </div>
+
+                <h3>Notification Preferences</h3>
+
+                <label class="checkbox-row">
+                    <input type="checkbox" id="emailEnabled">
+                    Enable email notifications
+                </label>
+
+                <label class="checkbox-row">
+                    <input type="checkbox" id="whatsappEnabled">
+                    Enable WhatsApp notifications
+                </label>
+
+                <label class="checkbox-row">
+                    <input type="checkbox" id="weeklyReports">
+                    Enable weekly reports
+                </label>
+
+                <button type="submit" class="primary-button">
+                    Save Settings
+                </button>
+
+                <p id="settingsMessage" class="form-message"></p>
+
+            </form>
+
+        </section>
+
+        <!-- ================================= -->
+        <!-- BATTERY USER GUIDE PAGE -->
+        <!-- LAST PAGE IN NAVIGATION -->
+        <!-- ================================= -->
+
+        <section id="page-guide" class="page-section">
+
+            <div class="section-heading">
+
+                <div>
+                    <span class="eyebrow">VOLT IQ LEARNING CENTER</span>
+                    <h2>Battery User Guide</h2>
+                    <p>
+                        Learn about your 12V, 7Ah lead-acid battery.
+                    </p>
+                </div>
+
+            </div>
+
+            <article class="guide-card">
+
+                <details>
+                    <summary>
+                        1. Understanding Your 12V, 7Ah Battery
+                    </summary>
+
+                    <div class="guide-content">
+                        <p>
+                            Your battery is a 12V, 7Ah lead-acid battery.
+                            Its nominal energy is approximately 84Wh
+                            (12V × 7Ah). Actual usable energy depends on
+                            battery condition, load, temperature and
+                            discharge rate.
+                        </p>
+                    </div>
+                </details>
+
+                <details>
+                    <summary>
+                        2. What Is State of Charge (SOC)?
+                    </summary>
+
+                    <div class="guide-content">
+                        <p>
+                            SOC estimates how much charge remains in
+                            the battery. It is expressed as a percentage.
+                            A high SOC indicates more remaining charge.
+                            A low SOC indicates that the battery may
+                            need charging.
+                        </p>
+                    </div>
+                </details>
+
+                <details>
+                    <summary>
+                        3. What Is State of Health (SOH)?
+                    </summary>
+
+                    <div class="guide-content">
+                        <p>
+                            SOH estimates the battery's condition
+                            compared with its original condition.
+                            A reliable SOH estimate requires suitable
+                            battery measurements and an estimation method.
+                            It should not be presented as measured data
+                            if the device does not provide it.
+                        </p>
+                    </div>
+                </details>
+
+                <details>
+                    <summary>
+                        4. Understanding Voltage and Current
+                    </summary>
+
+                    <div class="guide-content">
+                        <p>
+                            Voltage describes the electrical potential
+                            of the battery. Current describes the rate
+                            of electrical flow. The sign of current
+                            depends on how the sensor is connected
+                            and configured.
+                        </p>
+                    </div>
+                </details>
+
+                <details>
+                    <summary>
+                        5. Understanding Battery Temperature
+                    </summary>
+
+                    <div class="guide-content">
+                        <p>
+                            Temperature monitoring helps identify
+                            overheating conditions. The temperature
+                            sensor's location matters: an ambient
+                            temperature reading may differ from
+                            the actual battery temperature.
+                        </p>
+                    </div>
+                </details>
+
+                <details>
+                    <summary>
+                        6. Demo Mode vs Live Mode
+                    </summary>
+
+                    <div class="guide-content">
+
+                        <p>
+                            <strong>Demo Mode:</strong>
+                            Displays sample readings for exploring
+                            the dashboard. These are not measurements
+                            from your physical battery.
+                        </p>
+
+                        <p>
+                            <strong>Live Mode:</strong>
+                            Displays readings received from your ESP32.
+                            If the device is disconnected or has not
+                            sent data, the dashboard should show that
+                            live readings are unavailable rather than
+                            inventing values.
+                        </p>
+
+                    </div>
+                </details>
+
+                <details>
+                    <summary>
+                        7. Battery Safety Reminders
+                    </summary>
+
+                    <div class="guide-content">
+                        <p>
+                            Use a charger designed for your battery type.
+                            Avoid short circuits, incorrect polarity,
+                            overheating and physical damage. Follow the
+                            battery manufacturer's charging and handling
+                            instructions.
+                        </p>
+                    </div>
+                </details>
+
+            </article>
+
+        </section>
+
+        <!-- FOOTER -->
+        <footer class="app-footer">
+            <span>VoltIQ Battery Intelligence</span>
+            <span>12V · 7Ah Lead-Acid Battery</span>
+        </footer>
+
+    </main>
+
+</div>
+
+<!-- TOAST NOTIFICATIONS -->
+<div id="toastContainer" class="toast-container"></div>
+
+<!-- APPLICATION JAVASCRIPT -->
+<script src="app.js"></script>
+
+</body>
+</html>

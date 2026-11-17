@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from .. import models, security
@@ -13,17 +13,12 @@ router = APIRouter(
 
 @router.get("")
 def get_alerts(
-    current_user=Depends(
-        security.get_current_user
-    ),
+    current_user=Depends(security.get_current_user),
     db: Session = Depends(get_db)
 ):
-
     alerts = (
         db.query(models.Alert)
-        .order_by(
-            models.Alert.created_at.desc()
-        )
+        .order_by(models.Alert.created_at.desc())
         .limit(100)
         .all()
     )
@@ -35,10 +30,8 @@ def get_alerts(
             "type": alert.alert_type,
             "severity": alert.severity,
             "message": alert.message,
-            "acknowledged": alert.acknowledged,
-            "created_at": (
-                alert.created_at.isoformat()
-            )
+            "acknowledged": alert.is_read,
+            "created_at": alert.created_at.isoformat()
         }
         for alert in alerts
     ]
@@ -47,29 +40,22 @@ def get_alerts(
 @router.post("/{alert_id}/acknowledge")
 def acknowledge_alert(
     alert_id: int,
-    current_user=Depends(
-        security.get_current_user
-    ),
+    current_user=Depends(security.get_current_user),
     db: Session = Depends(get_db)
 ):
-
     alert = (
         db.query(models.Alert)
-        .filter(
-            models.Alert.id == alert_id
-        )
+        .filter(models.Alert.id == alert_id)
         .first()
     )
 
     if not alert:
-
         raise HTTPException(
             status_code=404,
             detail="Alert not found."
         )
 
-    alert.acknowledged = True
-
+    alert.is_read = True
     db.commit()
 
     return {
@@ -80,14 +66,10 @@ def acknowledge_alert(
 
 @router.delete("")
 def clear_alerts(
-    current_user=Depends(
-        security.get_current_user
-    ),
+    current_user=Depends(security.get_current_user),
     db: Session = Depends(get_db)
 ):
-
     db.query(models.Alert).delete()
-
     db.commit()
 
     return {

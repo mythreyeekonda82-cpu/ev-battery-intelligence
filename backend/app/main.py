@@ -1,4 +1,17 @@
 from pathlib import Path
+from dotenv import load_dotenv
+
+# ============================================================
+# LOAD ENVIRONMENT VARIABLES
+# ============================================================
+
+BASE_DIR = Path(__file__).resolve().parents[2]
+load_dotenv(BASE_DIR / ".env")
+
+
+# ============================================================
+# IMPORTS
+# ============================================================
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -16,13 +29,12 @@ from .routers.alerts import router as alerts_router
 from .routers.settings import router as settings_router
 from .routers.notifications import router as notifications_router
 from .routers.reports import router as reports_router
-
+from .routers.battery_intelligence import router as battery_intelligence_router
 
 # ============================================================
 # PATHS
 # ============================================================
 
-BASE_DIR = Path(__file__).resolve().parents[2]
 FRONTEND_DIR = BASE_DIR / "frontend"
 
 
@@ -109,6 +121,7 @@ app.include_router(alerts_router)
 app.include_router(settings_router)
 app.include_router(notifications_router)
 app.include_router(reports_router)
+app.include_router(battery_intelligence_router)
 
 
 # ============================================================
@@ -125,6 +138,14 @@ def javascript():
     return FileResponse(FRONTEND_DIR / "app.js")
 
 
+
+
 @app.get("/styles.css")
 def stylesheet():
     return FileResponse(FRONTEND_DIR / "styles.css")
+
+@app.get("/battery-intelligence.js")
+def battery_intelligence():
+    return FileResponse(
+        FRONTEND_DIR / "battery-intelligence.js"
+    )
