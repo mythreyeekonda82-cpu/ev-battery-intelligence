@@ -17,7 +17,7 @@ let role = "user";
 let userName = "VoltIQ User";
 let page = "overview";
 let timer = null;
-
+let te
 let fleetVehicles = [];
 let selectedVehicleId = null;
 let fleetError = "";
@@ -30,16 +30,18 @@ let deviceUrl =
     "http://192.168.4.1/telemetry";
 
 let telemetry = {
-    voltage: 12.6,
-    current: 1.1,
-    temperature: 29.4,
-    soc: 82,
-    soh: 96,
-    power: 13.86,
+    voltage: VOLTIQ_MODE === "DEMO" ? 12.6 : null,
+    current: VOLTIQ_MODE === "DEMO" ? 1.1 : null,
+    temperature: VOLTIQ_MODE === "DEMO" ? 29.4 : null,
+    soc: VOLTIQ_MODE === "DEMO" ? 82 : null,
+    soh: VOLTIQ_MODE === "DEMO" ? 96 : null,
+    power: VOLTIQ_MODE === "DEMO" ? 13.86 : null,
     charging: false,
-    updated: new Date().toISOString()
+    updated: null
 };
 
+let esp32Connected = false;
+let esp32HasData = false;
 
 /* ================= HELPERS ================= */
 
@@ -517,8 +519,6 @@ function stat(label, value, description) {
         </div>
     `;
 }
-
-
 /* ================= MAIN PAGE RENDERER ================= */
 
 function renderPage(which) {
@@ -552,7 +552,6 @@ function renderPage(which) {
     const lab = getLab();
 
     let html = "";
-
 
     /* =====================================================
        1. OVERVIEW
@@ -624,11 +623,8 @@ function renderPage(which) {
         </div>
         `;
 
-        // Admin receives all vehicles; user receives only assigned vehicles
-        // returned by the authenticated backend endpoint.
         html += renderFleetOverview();
     }
-
 
     /* =====================================================
        2. VEHICLE DETAILS
@@ -679,123 +675,7 @@ function renderPage(which) {
         }
     }
 
-
-    /* =====================================================
-       3. BATTERY MONITOR — SIX FEATURES
-    ===================================================== */
-
-    if (page === "battery") {
-        if (typeof updateStress === "function") {
-            updateStress(b);
-        }
-
-        const sensor = typeof sensorCheck === "function"
-            ? sensorCheck(b)
-            : {
-                status: "UNAVAILABLE",
-                reason: "Sensor reliability module unavailable"
-            };
-
-        const recovery = lab.events?.find(
-            x => x.recovery !== undefined
-        );
-
-        html = heading(
-            "ADVANCED MONITORING",
-            "Battery Monitor",
-            "All six battery intelligence features for your selected vehicle."
-        ) + `
-
-        <div class="stats-grid">
-            ${stat("VOLTAGE", fmt(b.voltage, 2) + " V", "Pack voltage")}
-            ${stat("CURRENT", fmt(b.current, 2) + " A", "Signed battery current")}
-            ${stat("TEMPERATURE", fmt(b.temperature, 1) + " °C", "Battery temperature")}
-            ${stat("POWER", fmt(Math.abs(b.voltage * b.current), 2) + " W", "Calculated voltage × current")}
-        </div>
-
-        <div class="feature-grid">
-
-            <article class="feature-card">
-                <label>01 · BATTERY RISK INDEX</label>
-                <span class="big">${risk.score ?? "—"} / 100</span>
-                <h3>${esc(risk.level)}</h3>
-                <p>${esc(risk.detail)}</p>
-                <p>Weighted voltage, current and temperature assessment.</p>
-            </article>
-
-            <article class="feature-card">
-                <label>02 · SENSOR RELIABILITY MONITORING</label>
-                <span class="big">${esc(sensor.status)}</span>
-                <h3>Sensor checks</h3>
-                <p>${esc(sensor.reason)}</p>
-                <p>Checks for missing and implausible measurements.</p>
-            </article>
-
-            <article class="feature-card">
-                <label>03 · BATTERY STRESS ANALYSIS</label>
-                <span class="big">${lab.events?.length || 0}</span>
-                <h3>Stress events</h3>
-                <p>
-                    ${lab.active
-                        ? "A stress condition is currently active."
-                        : "No active stress condition detected."}
-                </p>
-            </article>
-
-            <article class="feature-card">
-                <label>04 · RECOVERY TIME TRACKING</label>
-                <span class="big">
-                    ${recovery ? fmt(recovery.recovery, 1) + " s" : "—"}
-                </span>
-                <h3>Recovery duration</h3>
-                <p>Tracks recovery after a monitored stress event.</p>
-            </article>
-
-            <article class="feature-card">
-                <label>05 · PROTECTION RESPONSE VERIFICATION</label>
-                <span class="big">
-                    ${lab.protection ? "TESTED" : "NOT TESTED"}
-                </span>
-                <h3>Response verification</h3>
-                <p>
-                    ${lab.protection
-                        ? esc(lab.protection.note || "Simulation response recorded.")
-                        : "Run a software fault simulation to view an illustrative response."}
-                </p>
-                <p>Demonstration only; does not operate battery protection hardware.</p>
-            </article>
-
-            <article class="feature-card">
-                <label>06 · BATTERY FAULT SIMULATOR</label>
-                <h3>Run a software fault simulation</h3>
-                <p>Choose a fault type below.</p>
-
-                <div class="fault-buttons">
-                    <button onclick="runFault('overvoltage')">Overvoltage</button>
-                    <button onclick="runFault('undervoltage')">Undervoltage</button>
-                    <button onclick="runFault('overcurrent')">Overcurrent</button>
-                    <button onclick="runFault('overheating')">Overheating</button>
-                </div>
-
-                <p>
-                    ${esc(lab.simulation || "No simulated fault active.")}
-                </p>
-
-                <button onclick="clearFault()">Clear simulation</button>
-            </article>
-
-        </div>
-
-        <div class="panel">
-            <p class="muted">
-                Safety note: These are monitoring and demonstration
-                functions. They are not a certified BMS and do not
-                disconnect or control the battery.
-            </p>
-        </div>
-        `;
-    }
-
+ 
 
     /* =====================================================
        4. ALERTS AND NOTIFICATIONS
@@ -814,7 +694,6 @@ function renderPage(which) {
         </div>
         `;
     }
-
 
     /* =====================================================
        5. CHARGING AND DISCHARGING
@@ -854,9 +733,8 @@ function renderPage(which) {
         `;
     }
 
-
     /* =====================================================
-       6. REPORTS — WHATSAPP, EMAIL AND DOWNLOAD
+       6. REPORTS
     ===================================================== */
 
     if (page === "reports") {
@@ -908,7 +786,6 @@ function renderPage(which) {
         `;
     }
 
-
     /* =====================================================
        7. SETTINGS
     ===================================================== */
@@ -954,7 +831,6 @@ function renderPage(which) {
         `;
     }
 
-
     /* =====================================================
        8. BATTERY USER GUIDE
     ===================================================== */
@@ -992,11 +868,8 @@ function renderPage(which) {
         `;
     }
 
-
     $("pageContent").innerHTML = html;
 }
-
-
 /* ================= FLEET OVERVIEW ================= */
 
 function renderFleetOverview() {
@@ -1225,7 +1098,7 @@ function updateDemo() {
 
     telemetry.updated = new Date().toISOString();
 
-    renderPage(page);
+    // Do not rebuild the page during automatic background updates.
 }
 
 
@@ -1270,8 +1143,6 @@ async function pollEsp32() {
         telemetry.power =
             telemetry.voltage * telemetry.current;
 
-        renderPage(page);
-
     } catch (error) {
         console.error("ESP32 error:", error);
         toast("ESP32 not reachable: " + error.message);
@@ -1281,12 +1152,16 @@ async function pollEsp32() {
 
 /* ================= REFRESH ================= */
 
-function refreshNow() {
+async function refreshNow() {
     if (VOLTIQ_MODE === "DEMO") {
         updateDemo();
     } else {
-        pollEsp32();
+        await pollEsp32();
     }
+
+    // Manual refresh redraws once.
+    // Automatic polling does not rebuild the page.
+    renderPage(page);
 }
 
 async function refreshFleet() {

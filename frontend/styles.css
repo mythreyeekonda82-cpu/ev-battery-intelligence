@@ -1087,3 +1087,278 @@ button:hover {
         width: 100% !important;
     }
 }
+/* VOLTIQ — GLASS / TRANSPARENT PANEL EFFECT */
+
+.panel,
+.feature-card,
+.vehicle-card,
+.stat-card,
+.system-card {
+    background: rgba(20, 39, 58, 0.48) !important;
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(110, 190, 210, 0.20);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
+}
+
+.sidebar {
+    background: rgba(10, 24, 40, 0.78);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+}
+
+.topbar {
+    background: rgba(8, 17, 31, 0.78);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+}
+
+.vehicle-card:hover,
+.feature-card:hover {
+    background: rgba(35, 70, 90, 0.55) !important;
+    border-color: rgba(53, 214, 195, 0.45);
+    transform: translateY(-2px);
+    transition: 0.25s ease;
+}
+
+/* =================================
+   VOLTIQ BATTERY INTELLIGENCE SPACING
+================================= */
+
+#batteryIntelligence,
+.battery-intelligence,
+.vi-container {
+    margin: 28px 0 !important;
+}
+
+#batteryIntelligence .feature-grid,
+.battery-intelligence .feature-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 22px !important;
+    margin: 24px 0 !important;
+}
+
+.feature-card {
+    min-height: 205px;
+    padding: 24px !important;
+    border-radius: 18px !important;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    line-height: 1.6;
+}
+
+.feature-card label {
+    margin-bottom: 8px;
+    line-height: 1.6;
+}
+
+.feature-card .big {
+    display: block;
+    margin: 8px 0;
+    font-size: 27px;
+}
+
+.feature-card h3 {
+    margin: 5px 0;
+    line-height: 1.4;
+}
+
+.feature-card p {
+    margin: 3px 0;
+    line-height: 1.7;
+}
+
+/* Backend results container */
+#batteryIntelligence,
+.battery-intelligence,
+.vi-container,
+.panel {
+    padding: 24px !important;
+    border-radius: 18px;
+}
+
+/* Separate backend cards from heading */
+.panel-head {
+    margin-bottom: 20px;
+}
+
+/* Fault simulator spacing */
+.fault-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin: 16px 0;
+}
+
+.fault-buttons button {
+    padding: 11px 16px;
+    border-radius: 9px;
+}
+
+/* Responsive layout */
+@media (max-width: 900px) {
+    #batteryIntelligence .feature-grid,
+    .battery-intelligence .feature-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 600px) {
+    #batteryIntelligence .feature-grid,
+    .battery-intelligence .feature-grid {
+        grid-template-columns: 1fr;
+    }
+}
+/* VOLTIQ — BATTERY INTELLIGENCE CARD LAYOUT */
+
+#viBackendResults {
+    width: 100%;
+    margin: 28px 0;
+}
+
+#viBackendResults .vi-api-panel {
+    padding: 28px !important;
+}
+
+#viBackendResults .vi-api-panel .panel-head {
+    margin-bottom: 26px;
+    align-items: center;
+}
+
+#viBackendResults .vi-api-panel .vi-success {
+    margin: 18px 0 22px;
+    line-height: 1.7;
+}
+
+#viBackendResults .vi-api-panel .feature-grid {
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 24px !important;
+    margin: 22px 0 28px !important;
+    align-items: stretch;
+}
+
+#viBackendResults .vi-api-panel .feature-card {
+    min-width: 0;
+    min-height: 220px;
+    padding: 26px !important;
+    margin: 0 !important;
+    border-radius: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 13px;
+    line-height: 1.7;
+}
+
+#viBackendResults .vi-api-panel .feature-card label {
+    line-height: 1.7;
+    margin-bottom: 5px;
+}
+
+#viBackendResults .vi-api-panel .feature-card .big {
+    font-size: 27px;
+    margin: 5px 0;
+}
+
+#viBackendResults .vi-api-panel .feature-card h3 {
+    margin: 5px 0;
+}
+
+#viBackendResults .vi-api-panel .feature-card p {
+    line-height: 1.8;
+    margin: 0;
+}
+
+@media (max-width: 950px) {
+    #viBackendResults .vi-api-panel .feature-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    }
+}
+
+@media (max-width: 600px) {
+    #viBackendResults .vi-api-panel .feature-grid {
+        grid-template-columns: 1fr !important;
+    }
+}
+/* FIX WHITE FAULT SIMULATOR BUTTONS */
+
+button[onclick*="runFault"],
+button[onclick*="clearFault"],
+.fault-buttons button {
+    background: rgba(35, 65, 85, 0.75) !important;
+    color: #45ddce !important;
+    border: 1px solid rgba(69, 221, 206, 0.4) !important;
+    border-radius: 9px !important;
+    padding: 10px 16px !important;
+    font-weight: 600;
+    cursor: pointer;
+    transition: 0.2s ease;
+}
+
+button[onclick*="runFault"]:hover,
+button[onclick*="clearFault"]:hover,
+.fault-buttons button:hover {
+    background: rgba(69, 221, 206, 0.18) !important;
+    color: #ffffff !important;
+    border-color: #45ddce !important;
+}
+
+/* Other buttons inside battery monitor panels */
+#pageContent .panel button:not(.primary-btn) {
+    background-color: #172b3e;
+    color: #45ddce;
+    border-color: rgba(69, 221, 206, 0.35);
+}
+/* VOLTIQ — FAULT SIMULATOR BUTTON THEME */
+
+#viBackendResults .vi-action-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+#viBackendResults .vi-action-btn {
+    background: linear-gradient(135deg, #142b3b, #193b4b) !important;
+    color: #54e6d7 !important;
+    border: 1px solid rgba(84, 230, 215, 0.45) !important;
+    border-radius: 10px !important;
+    padding: 12px 18px !important;
+    font-size: 14px !important;
+    font-weight: 600 !important;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18);
+    transition: background 0.2s ease, color 0.2s ease,
+                border-color 0.2s ease, transform 0.2s ease;
+}
+
+#viBackendResults .vi-action-btn:hover {
+    background: linear-gradient(135deg, #087f79, #12b8a8) !important;
+    color: #ffffff !important;
+    border-color: #54e6d7 !important;
+    transform: translateY(-2px);
+}
+
+#viBackendResults .vi-action-btn:active {
+    transform: scale(0.97);
+}
+
+#viBackendResults .vi-action-btn:focus-visible {
+    outline: 2px solid #54e6d7;
+    outline-offset: 3px;
+}
+
+/* Fault simulation result text */
+#viBackendResults .vi-result-box {
+    margin-top: 16px;
+    padding: 18px;
+    background: rgba(18, 42, 55, 0.85);
+    color: #d9eeee;
+    border: 1px solid rgba(84, 230, 215, 0.25);
+    border-radius: 12px;
+    line-height: 1.7;
+}
+
+#viBackendResults .vi-result-box h3 {
+    color: #54e6d7;
+}

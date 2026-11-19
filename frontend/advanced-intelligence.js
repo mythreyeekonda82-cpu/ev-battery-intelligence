@@ -1,17 +1,8 @@
+
 /*
  * VoltIQ Advanced Battery Intelligence
- *
- * Displays:
- * 1. Predictive Battery Health
- * 2. Remaining Useful Life
- * 3. AI Anomaly Detection
- * 4. Smart Charging Optimization
- * 5. Battery Degradation Forecasting
- * 6. Intelligent Maintenance Prediction
- * 7. Driving Range Prediction
- * 8. Fleet Intelligence
- *
- * This module is separate from the existing battery-intelligence.js.
+ * Integrates with the existing VoltIQ Battery Monitor.
+ * Keeps the original six intelligence features untouched.
  */
 
 (function () {
@@ -22,6 +13,7 @@
 
     let refreshTimer = null;
     let isLoading = false;
+    let lastBatteryId = null;
 
     // -----------------------------------------------------
     // AUTHENTICATION
@@ -68,8 +60,9 @@
 
         const response = await fetch(API_BASE + endpoint, {
             method: "GET",
+            cache: "no-store",
             headers: {
-                "Authorization": "Bearer " + token,
+                Authorization: "Bearer " + token,
                 "Content-Type": "application/json"
             }
         });
@@ -82,7 +75,13 @@
             throw new Error("You do not have permission to view this battery.");
         }
 
-        const result = await response.json();
+        let result;
+
+        try {
+            result = await response.json();
+        } catch {
+            throw new Error("The server returned an invalid response.");
+        }
 
         if (!response.ok) {
             throw new Error(
@@ -99,15 +98,13 @@
 
     function escapeHTML(value) {
         return String(value ?? "").replace(/[&<>"']/g, function (char) {
-            const replacements = {
+            return {
                 "&": "&amp;",
                 "<": "&lt;",
                 ">": "&gt;",
                 '"': "&quot;",
                 "'": "&#039;"
-            };
-
-            return replacements[char];
+            }[char];
         });
     }
 
@@ -164,7 +161,7 @@
     }
 
     // -----------------------------------------------------
-    // FEATURE CARD RENDERING
+    // FEATURE 1: PREDICTIVE BATTERY HEALTH
     // -----------------------------------------------------
 
     function renderPredictiveHealth(feature) {
@@ -177,22 +174,37 @@
 
         const predictions = feature.predictions || {};
 
-        const content = `
-            <div class="vi-main-metric">
-                ${displayValue(feature.current_soh, "%")}
-            </div>
-            <p>Current SOH</p>
-            <div class="vi-metric-grid">
-                <div>30 days: <strong>${displayValue(predictions["30_days"], "%")}</strong></div>
-                <div>90 days: <strong>${displayValue(predictions["90_days"], "%")}</strong></div>
-                <div>180 days: <strong>${displayValue(predictions["180_days"], "%")}</strong></div>
-                <div>365 days: <strong>${displayValue(predictions["365_days"], "%")}</strong></div>
-            </div>
-            <p class="vi-muted">${escapeHTML(feature.message || "")}</p>
-        `;
+        return createCard(
+            "Predictive Battery Health",
+            `
+                <div class="vi-main-metric">
+                    ${displayValue(feature.current_soh, "%")}
+                </div>
+                <p>Current SOH</p>
 
-        return createCard("Predictive Battery Health", content);
+                <div class="vi-metric-grid">
+                    <div>30 days:
+                        <strong>${displayValue(predictions["30_days"], "%")}</strong>
+                    </div>
+                    <div>90 days:
+                        <strong>${displayValue(predictions["90_days"], "%")}</strong>
+                    </div>
+                    <div>180 days:
+                        <strong>${displayValue(predictions["180_days"], "%")}</strong>
+                    </div>
+                    <div>365 days:
+                        <strong>${displayValue(predictions["365_days"], "%")}</strong>
+                    </div>
+                </div>
+
+                <p class="vi-muted">${escapeHTML(feature.message || "")}</p>
+            `
+        );
     }
+
+    // -----------------------------------------------------
+    // FEATURE 2: REMAINING USEFUL LIFE
+    // -----------------------------------------------------
 
     function renderRUL(feature) {
         if (!feature || !feature.available) {
@@ -215,9 +227,16 @@
         );
     }
 
+    // -----------------------------------------------------
+    // FEATURE 3: AI ANOMALY DETECTION
+    // -----------------------------------------------------
+
     function renderAnomalies(feature) {
         if (!feature) {
-            return createCard("AI Anomaly Detection", "<p>Data unavailable.</p>");
+            return createCard(
+                "AI Anomaly Detection",
+                "<p>Data unavailable.</p>"
+            );
         }
 
         return createCard(
@@ -231,6 +250,10 @@
             `
         );
     }
+
+    // -----------------------------------------------------
+    // FEATURE 4: SMART CHARGING OPTIMIZATION
+    // -----------------------------------------------------
 
     function renderCharging(feature) {
         if (!feature || !feature.available) {
@@ -253,6 +276,10 @@
         );
     }
 
+    // -----------------------------------------------------
+    // FEATURE 5: BATTERY DEGRADATION FORECAST
+    // -----------------------------------------------------
+
     function renderDegradation(feature) {
         if (!feature || !feature.available) {
             return createCard(
@@ -274,11 +301,15 @@
         );
     }
 
+    // -----------------------------------------------------
+    // FEATURE 6: INTELLIGENT MAINTENANCE
+    // -----------------------------------------------------
+
     function renderMaintenance(feature) {
         if (!feature || !feature.available) {
             return createCard(
                 "Intelligent Maintenance Prediction",
-                "<p>Maintenance data unavailable.</p>"
+                `<p>${escapeHTML(feature?.message || "Maintenance data unavailable.")}</p>`
             );
         }
 
@@ -287,6 +318,10 @@
             listHTML(feature.recommendations)
         );
     }
+
+    // -----------------------------------------------------
+    // FEATURE 7: DRIVING RANGE PREDICTION
+    // -----------------------------------------------------
 
     function renderRange(feature) {
         if (!feature || !feature.available) {
@@ -303,15 +338,25 @@
                     ${displayValue(feature.estimated_range_km, " km")}
                 </div>
                 <p>Estimated remaining driving range</p>
-                <p>Remaining energy: ${displayValue(feature.remaining_energy_kwh, " kWh")}</p>
+                <p>
+                    Remaining energy:
+                    ${displayValue(feature.remaining_energy_kwh, " kWh")}
+                </p>
                 <p class="vi-muted">${escapeHTML(feature.note || "")}</p>
             `
         );
     }
 
+    // -----------------------------------------------------
+    // FEATURE 8: FLEET INTELLIGENCE
+    // -----------------------------------------------------
+
     function renderFleet(feature) {
         if (!feature) {
-            return createCard("Fleet Intelligence", "<p>Fleet data unavailable.</p>");
+            return createCard(
+                "Fleet Intelligence",
+                "<p>Fleet data unavailable.</p>"
+            );
         }
 
         const batteries = feature.batteries || [];
@@ -323,7 +368,11 @@
                     ${displayValue(feature.battery_count)}
                 </div>
                 <p>Batteries in fleet</p>
-                <p>Average SOH: ${displayValue(feature.average_soh, "%")}</p>
+                <p>
+                    Average SOH:
+                    ${displayValue(feature.average_soh, "%")}
+                </p>
+
                 <div class="vi-fleet-list">
                     ${batteries.slice(0, 10).map(item => `
                         <div class="vi-fleet-row">
@@ -371,14 +420,17 @@
     }
 
     // -----------------------------------------------------
-    // MAIN RENDERER
+    // MAIN ADVANCED INTELLIGENCE RENDERER
     // -----------------------------------------------------
 
     function renderAdvancedIntelligence(data) {
         if (!data || !data.available) {
             return `
                 <div class="vi-advanced-error">
-                    ${escapeHTML(data?.message || "Advanced intelligence is unavailable.")}
+                    ${escapeHTML(
+                        data?.message ||
+                        "Advanced intelligence is unavailable."
+                    )}
                 </div>
             `;
         }
@@ -389,12 +441,30 @@
             ${renderConnectionStatus(data)}
 
             <div class="vi-current-readings">
-                <div><span>Voltage</span><strong>${displayValue(current.voltage, " V")}</strong></div>
-                <div><span>Current</span><strong>${displayValue(current.current, " A")}</strong></div>
-                <div><span>Temperature</span><strong>${displayValue(current.temperature, " °C")}</strong></div>
-                <div><span>SOC</span><strong>${displayValue(current.soc, "%")}</strong></div>
-                <div><span>SOH</span><strong>${displayValue(current.soh, "%")}</strong></div>
-                <div><span>Risk Index</span><strong>${displayValue(data.battery_risk_index?.score)}</strong></div>
+                <div>
+                    <span>Voltage</span>
+                    <strong>${displayValue(current.voltage, " V")}</strong>
+                </div>
+                <div>
+                    <span>Current</span>
+                    <strong>${displayValue(current.current, " A")}</strong>
+                </div>
+                <div>
+                    <span>Temperature</span>
+                    <strong>${displayValue(current.temperature, " °C")}</strong>
+                </div>
+                <div>
+                    <span>SOC</span>
+                    <strong>${displayValue(current.soc, "%")}</strong>
+                </div>
+                <div>
+                    <span>SOH</span>
+                    <strong>${displayValue(current.soh, "%")}</strong>
+                </div>
+                <div>
+                    <span>Risk Index</span>
+                    <strong>${displayValue(data.battery_risk_index?.score)}</strong>
+                </div>
             </div>
 
             <div class="vi-advanced-grid">
@@ -419,22 +489,25 @@
     // -----------------------------------------------------
 
     async function refreshAdvancedIntelligence() {
-        if (isLoading) return;
-
         const container = document.getElementById("viAdvancedIntelligence");
 
-        if (!container) return;
+        if (!container || isLoading) return;
 
         isLoading = true;
 
         try {
             const batteryId = getBatteryId();
+            lastBatteryId = batteryId;
 
-            container.innerHTML = "<p>Loading advanced battery intelligence...</p>";
+            container.innerHTML =
+                "<p>Loading advanced battery intelligence...</p>";
 
             const data = await apiRequest(
                 "/" + encodeURIComponent(batteryId)
             );
+
+            // Ignore a response if the selected battery changed mid-request.
+            if (lastBatteryId !== batteryId) return;
 
             container.innerHTML = renderAdvancedIntelligence(data);
 
@@ -446,11 +519,8 @@
                 <button type="button" id="viAdvancedRetry">Retry</button>
             `;
 
-            const retry = document.getElementById("viAdvancedRetry");
-
-            if (retry) {
-                retry.addEventListener("click", refreshAdvancedIntelligence);
-            }
+            document.getElementById("viAdvancedRetry")
+                ?.addEventListener("click", refreshAdvancedIntelligence);
 
         } finally {
             isLoading = false;
@@ -458,20 +528,25 @@
     }
 
     // -----------------------------------------------------
-    // ATTACH TO BATTERY PAGE
+    // ATTACH TO THE REAL VOLTIQ DASHBOARD CONTAINER
     // -----------------------------------------------------
 
     function attachAdvancedIntelligence() {
-        const page = document.querySelector(
-            "#mainContent, #main-content, main, .main-content"
-        );
+        const currentPage = document.getElementById("pageContent");
 
-        if (!page) return;
+        if (!currentPage) return;
 
-        if (document.getElementById("viAdvancedSection")) return;
+        // Remove the old section when the app has rebuilt the page.
+        let section = document.getElementById("viAdvancedSection");
 
-        const section = document.createElement("section");
+        if (section && !currentPage.contains(section)) {
+            section.remove();
+            section = null;
+        }
 
+        if (section) return;
+
+        section = document.createElement("section");
         section.id = "viAdvancedSection";
         section.className = "vi-advanced-section";
 
@@ -492,12 +567,47 @@
             </div>
         `;
 
-        page.appendChild(section);
+        // Append AFTER the original six features.
+        currentPage.appendChild(section);
 
         document.getElementById("viAdvancedRefresh")
             ?.addEventListener("click", refreshAdvancedIntelligence);
 
         refreshAdvancedIntelligence();
+    }
+
+    // -----------------------------------------------------
+    // PAGE RENDERER INTEGRATION
+    // -----------------------------------------------------
+
+    function installRendererIntegration() {
+        if (typeof window.renderPage !== "function") {
+            return false;
+        }
+
+        if (window.renderPage.__viAdvancedWrapped) {
+            return true;
+        }
+
+        const originalRenderPage = window.renderPage;
+
+        function wrappedRenderPage(which) {
+            const result = originalRenderPage.apply(this, arguments);
+
+            if (String(which || "").toLowerCase() === "battery") {
+                // Wait until the original renderer has updated #pageContent.
+                requestAnimationFrame(function () {
+                    attachAdvancedIntelligence();
+                });
+            }
+
+            return result;
+        }
+
+        wrappedRenderPage.__viAdvancedWrapped = true;
+        window.renderPage = wrappedRenderPage;
+
+        return true;
     }
 
     // -----------------------------------------------------
@@ -510,21 +620,22 @@
     };
 
     // -----------------------------------------------------
-    // PAGE DETECTION
+    // INITIALISATION
     // -----------------------------------------------------
 
     function initialise() {
-        const currentPage = String(
-            window.page ||
-            window.currentPage ||
-            ""
-        ).toLowerCase();
+        installRendererIntegration();
 
-        if (
-            currentPage.includes("battery") ||
-            currentPage.includes("monitor")
-        ) {
-            attachAdvancedIntelligence();
+        // Handles the case where the Battery Monitor is already open.
+        if (document.getElementById("pageContent")) {
+            const heading = document.getElementById("crumb");
+
+            if (
+                heading &&
+                heading.textContent.toLowerCase().includes("battery")
+            ) {
+                attachAdvancedIntelligence();
+            }
         }
 
         if (refreshTimer) {
@@ -539,8 +650,17 @@
     }
 
     document.addEventListener("DOMContentLoaded", initialise);
-
-    // Also expose initialisation for the existing app renderer.
     window.addEventListener("load", initialise);
+
+    // Retry integration briefly in case app.js exposes renderPage later.
+    let attempts = 0;
+
+    const integrationTimer = setInterval(function () {
+        attempts++;
+
+        if (installRendererIntegration() || attempts >= 20) {
+            clearInterval(integrationTimer);
+        }
+    }, 250);
 
 })();

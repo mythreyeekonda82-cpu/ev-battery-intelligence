@@ -3,11 +3,15 @@
 /* =========================================================
    VOLTIQ — BACKEND BATTERY INTELLIGENCE INTEGRATION
 
-   Connects the six Battery Intelligence features to FastAPI.
+   Preserves the six existing Battery Intelligence features.
 
-   Existing app.js, login, reports, fleet and ESP32 code
-   remain unchanged.
-
+   Updates:
+   - No automatic POST to the stress endpoint during refresh.
+   - Stress analysis runs only when requested.
+   - Event-history panel removed from the dashboard.
+   - No event-history request during dashboard refresh.
+   - Refresh updates the existing panel without a loading flash.
+   - Fault and protection results remain visible after completion.
 ========================================================= */
 
 const VOLTIQ_API = {
@@ -132,7 +136,14 @@ function viCard(title, value, description, status = "healthy") {
 }
 
 
-/* ================= LOAD ALL SIX FEATURES ================= */
+/* ================= LOAD SIX FEATURES ================= */
+
+/*
+   Important:
+   GET requests are used for dashboard refreshes.
+   Stress analysis is deliberately NOT posted here.
+   This prevents repeated stress/event creation.
+*/
 
 async function viLoadAll() {
     const batteryId = viBatteryId();
@@ -141,17 +152,17 @@ async function viLoadAll() {
         throw new Error("Select a vehicle first.");
     }
 
+    if (VOLTIQ_API.loading) {
+        return VOLTIQ_API.lastData;
+    }
+
     VOLTIQ_API.loading = true;
     VOLTIQ_API.error = null;
 
     const requests = await Promise.allSettled([
         viRequest("/risk/" + encodeURIComponent(batteryId)),
         viRequest("/sensor-reliability/" + encodeURIComponent(batteryId)),
-        viRequest("/stress/" + encodeURIComponent(batteryId), {
-            method: "POST"
-        }),
         viRequest("/recovery/" + encodeURIComponent(batteryId)),
-        viRequest("/events?battery_id=" + encodeURIComponent(batteryId)),
         viRequest("/overview")
     ]);
 
@@ -160,9 +171,7 @@ async function viLoadAll() {
     const names = [
         "risk",
         "sensor",
-        "stress",
         "recovery",
-        "events",
         "overview"
     ];
 
@@ -194,7 +203,6 @@ function viRenderResults(data) {
     const sensor = data.sensor || {};
     const stress = data.stress || {};
     const recovery = data.recovery || {};
-    const events = data.events?.events || [];
     const overview = data.overview || {};
 
     const riskError = data.risk?.error;
@@ -207,7 +215,6 @@ function viRenderResults(data) {
         sensorError,
         stressError,
         recoveryError,
-        data.events?.error,
         data.overview?.error
     ].filter(Boolean);
 
@@ -221,7 +228,7 @@ function viRenderResults(data) {
                     <h2>Battery Intelligence Results</h2>
                     <p>
                         Vehicle ${viEscape(viBatteryId())}
-                        · Live API assessment
+                        · Backend assessment
                     </p>
                 </div>
 
@@ -238,9 +245,7 @@ function viRenderResults(data) {
                 errorMessages.length
                     ? `
                         <div class="vi-error">
-                            ${errorMessages.map(
-                                viEscape
-                            ).join("<br>")}
+                            ${errorMessages.map(viEscape).join("<br>")}
                         </div>
                     `
                     : `
@@ -279,12 +284,14 @@ function viRenderResults(data) {
                         ? "STRESS DETECTED"
                         : stress.stress_detected === false
                             ? "NO ACTIVE STRESS"
-                            : stressError || "Unavailable",
+                            : "Not run",
                     stress.active_stress_conditions?.join(", ") ||
-                        "No active stress conditions reported.",
+                        "Run analysis to check for active battery stress.",
                     stress.stress_detected
                         ? "WARNING"
-                        : "HEALTHY"
+                        : stress.stress_detected === false
+                            ? "HEALTHY"
+                            : "INFO"
                 )}
 
                 ${viCard(
@@ -314,6 +321,19 @@ function viRenderResults(data) {
                     "INFO"
                 )}
 
+            </div>
+
+            <div class="vi-inline-actions">
+                <button
+                    class="primary-btn"
+                    id="viStressButton"
+                    type="button"
+                >
+                    Run Battery Stress Analysis
+                </button>
+                <span id="viStressStatus" class="muted">
+                    Stress analysis runs only when requested.
+                </span>
             </div>
 
         </div>
@@ -407,7 +427,6 @@ function viRenderResults(data) {
                 </div>
 
             </div>
-
             <button
                 id="viVerifyButton"
                 class="primary-btn"
@@ -472,89 +491,33 @@ function viRenderResults(data) {
 
 
         <div class="panel">
-
-            <div class="panel-head">
-                <div>
-                    <h2>Intelligence Event History</h2>
-                    <p>Backend-stored battery intelligence events.</p>
-                </div>
-
-                <span class="mode-badge">
-                    ${events.length} EVENTS
-                </span>
-            </div>
-
-            ${
-                events.length
-                    ? `
-                        <div class="table-wrap">
-                            <table class="data-table">
-                                <thead>
-                                    <tr>
-                                        <th>EVENT</th>
-                                        <th>SEVERITY</th>
-                                        <th>MESSAGE</th>
-                                        <th>DATE</th>
-                                    </tr>
-                                </thead>
-
-                                <tbody>
-                                    ${events.map(event => `
-                                        <tr>
-                                            <td>${viEscape(event.event_type)}</td>
-                                            <td>
-                                                <span class="status ${viStatusClass(event.severity)}">
-                                                    ${viEscape(event.severity)}
-                                                </span>
-                                            </td>
-                                            <td>${viEscape(event.message)}</td>
-                                            <td>${viEscape(event.created_at || "—")}</td>
-                                        </tr>
-                                    `).join("")}
-                                </tbody>
-                            </table>
-                        </div>
-                    `
-                    : `
-                        <p class="muted">
-                            No intelligence events have been recorded yet.
-                        </p>
-                    `
-            }
-
-        </div>
-
-
-        <div class="panel">
             <h2>Fleet Intelligence Summary</h2>
 
             <div class="stats-grid">
 
-                ${`
-                    <div class="stat-card">
-                        <small>TOTAL EVENTS</small>
-                        <strong>${overview.total_events ?? "—"}</strong>
-                        <p>Stored intelligence events</p>
-                    </div>
+                <div class="stat-card">
+                    <small>TOTAL EVENTS</small>
+                    <strong>${overview.total_events ?? "—"}</strong>
+                    <p>Stored intelligence events</p>
+                </div>
 
-                    <div class="stat-card">
-                        <small>ACTIVE STRESS</small>
-                        <strong>${overview.active_stress_events ?? "—"}</strong>
-                        <p>Unresolved stress events</p>
-                    </div>
+                <div class="stat-card">
+                    <small>ACTIVE STRESS</small>
+                    <strong>${overview.active_stress_events ?? "—"}</strong>
+                    <p>Unresolved stress events</p>
+                </div>
 
-                    <div class="stat-card">
-                        <small>FAULT SIMULATIONS</small>
-                        <strong>${overview.fault_simulations ?? "—"}</strong>
-                        <p>Recorded simulations</p>
-                    </div>
+                <div class="stat-card">
+                    <small>FAULT SIMULATIONS</small>
+                    <strong>${overview.fault_simulations ?? "—"}</strong>
+                    <p>Recorded simulations</p>
+                </div>
 
-                    <div class="stat-card">
-                        <small>SENSOR WARNINGS</small>
-                        <strong>${overview.sensor_warnings ?? "—"}</strong>
-                        <p>Reliability warnings</p>
-                    </div>
-                `}
+                <div class="stat-card">
+                    <small>SENSOR WARNINGS</small>
+                    <strong>${overview.sensor_warnings ?? "—"}</strong>
+                    <p>Reliability warnings</p>
+                </div>
 
             </div>
         </div>
@@ -565,6 +528,12 @@ function viRenderResults(data) {
 
     if (refreshButton) {
         refreshButton.addEventListener("click", viRefresh);
+    }
+
+    const stressButton = document.getElementById("viStressButton");
+
+    if (stressButton) {
+        stressButton.addEventListener("click", viRunStress);
     }
 
     root.querySelectorAll("[data-vi-fault]").forEach(button => {
@@ -583,27 +552,85 @@ function viRenderResults(data) {
 
 /* ================= REFRESH ================= */
 
+/*
+   Does not replace the panel with a loading screen.
+   This avoids the visible flash during refresh.
+*/
+
 async function viRefresh() {
     const root = document.getElementById("viBackendResults");
 
-    if (root) {
-        root.innerHTML = `
-            <div class="panel">
-                <p class="muted">Loading backend intelligence...</p>
-            </div>
-        `;
-    }
+    if (!root || VOLTIQ_API.loading) return;
 
     try {
         const data = await viLoadAll();
-        viRenderResults(data);
+
+        if (data) {
+            viRenderResults(data);
+        }
     } catch (error) {
-        if (root) {
-            root.innerHTML = `
-                <div class="panel vi-error">
-                    ${viEscape(error.message)}
-                </div>
-            `;
+        VOLTIQ_API.error = error.message;
+
+        const existingError = root.querySelector(".vi-refresh-error");
+
+        if (existingError) {
+            existingError.textContent = error.message;
+        } else {
+            const message = document.createElement("div");
+            message.className = "vi-error vi-refresh-error";
+            message.textContent = error.message;
+            root.prepend(message);
+        }
+    }
+}
+
+
+/* ================= MANUAL STRESS ANALYSIS ================= */
+
+/*
+   POST /stress is called only when the user clicks the button.
+   It is never called during automatic or manual dashboard refresh.
+*/
+
+async function viRunStress() {
+    const output = document.getElementById("viStressStatus");
+    const batteryId = viBatteryId();
+
+    if (!batteryId) {
+        if (output) output.textContent = "Select a vehicle first.";
+        return;
+    }
+
+    if (output) {
+        output.textContent = "Running battery stress analysis...";
+    }
+
+    try {
+        const result = await viRequest(
+            "/stress/" + encodeURIComponent(batteryId),
+            { method: "POST" }
+        );
+
+        VOLTIQ_API.lastData = {
+            ...(VOLTIQ_API.lastData || {}),
+            stress: result
+        };
+
+        if (output) {
+            output.textContent = "Stress analysis completed.";
+        }
+
+        viRenderResults(VOLTIQ_API.lastData);
+
+        const stressOutput = document.getElementById("viStressStatus");
+
+        if (stressOutput) {
+            stressOutput.textContent = "Stress analysis completed.";
+        }
+
+    } catch (error) {
+        if (output) {
+            output.textContent = error.message;
         }
     }
 }
@@ -660,9 +687,14 @@ async function viRunFault(type) {
             `;
         }
 
-        toast("Backend fault simulation completed.");
+        if (typeof toast === "function") {
+            toast("Fault simulation completed. Result remains visible below.");
+        }
 
-        await viRefresh();
+        /*
+           Keep the simulation result visible.
+           Refresh manually only when you want updated overview data.
+        */
 
     } catch (error) {
         if (output) {
@@ -678,7 +710,13 @@ async function viVerifyProtection() {
     const output = document.getElementById("viProtectionResult");
 
     const number = id => {
-        const value = Number(document.getElementById(id)?.value);
+        const element = document.getElementById(id);
+
+        if (!element || element.value.trim() === "") {
+            throw new Error("Please enter all numeric readings.");
+        }
+
+        const value = Number(element.value);
 
         if (!Number.isFinite(value)) {
             throw new Error("Please enter valid numeric readings.");
@@ -688,8 +726,10 @@ async function viVerifyProtection() {
     };
 
     try {
+        const actionElement = document.getElementById("viAction");
+
         const payload = {
-            action: document.getElementById("viAction").value.trim(),
+            action: actionElement?.value.trim() || "",
 
             baseline_voltage: number("viBeforeVoltage"),
             baseline_current: number("viBeforeCurrent"),
@@ -742,9 +782,15 @@ async function viVerifyProtection() {
             `;
         }
 
-        toast("Protection verification recorded.");
+        if (typeof toast === "function") {
+            toast("Protection verification recorded. Result remains visible below.");
+        }
 
-        await viRefresh();
+        /*
+           Do not rebuild the panel immediately.
+           Keep the verification result visible until manual refresh
+           or navigation to another page.
+        */
 
     } catch (error) {
         if (output) {
@@ -786,8 +832,9 @@ function viAttachPanel() {
         return;
     }
 
-    window.renderPage = function(which) {
+    if (originalRenderPage.__viWrapped) return;
 
+    const wrappedRenderPage = function(which) {
         const result = originalRenderPage.apply(this, arguments);
 
         if (which === "battery") {
@@ -797,12 +844,17 @@ function viAttachPanel() {
         return result;
     };
 
+    wrappedRenderPage.__viWrapped = true;
+
+    window.renderPage = wrappedRenderPage;
+
 })();
 
 
 /* ================= GLOBAL ACCESS ================= */
 
 window.viRefresh = viRefresh;
+window.viRunStress = viRunStress;
 window.viRunFault = viRunFault;
 window.viVerifyProtection = viVerifyProtection;
 
