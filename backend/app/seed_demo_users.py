@@ -1,6 +1,6 @@
-from backend.app.database import SessionLocal, init_db
-from backend.app.models import User, Vehicle, Battery
-from backend.app.security import hash_password, verify_password
+from .database import SessionLocal, init_db
+from .models import User, Vehicle, Battery
+from .security import hash_password, verify_password
 
 
 # ============================================================

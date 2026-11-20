@@ -37,17 +37,20 @@ def advanced_fleet_intelligence(
     """
 
     try:
-        result = get_fleet_intelligence(db, user)
+        result = get_fleet_intelligence(
+            db=db,
+            user=user
+        )
 
         return {
             "success": True,
             "data": result,
         }
 
-    except Exception as exc:
+    except Exception:
         raise HTTPException(
             status_code=500,
-            detail=f"Unable to generate fleet intelligence: {str(exc)}",
+            detail="Unable to generate fleet intelligence.",
         )
 
 
@@ -102,8 +105,9 @@ def advanced_battery_intelligence(
     except HTTPException:
         raise
 
-    except Exception as exc:
+    except Exception:
         raise HTTPException(
             status_code=500,
-            detail=f"Unable to generate battery intelligence: {str(exc)}",
+            detail="Unable to generate battery intelligence.",
         )
+        

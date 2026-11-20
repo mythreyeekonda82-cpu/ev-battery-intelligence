@@ -35,22 +35,26 @@ def create_vehicle_config(vehicle_number: int):
     vehicle_id = f"EV-{vehicle_number:03d}"
     battery_id = f"BAT-{vehicle_number:03d}"
 
+    # Seeded per vehicle so each vehicle keeps the same
+    # characteristics across server restarts.
+    rng = random.Random(vehicle_number)
+
     # Give every vehicle slightly different characteristics.
-    base_voltage = random.uniform(375.0, 405.0)
-    capacity_kwh = random.uniform(62.0, 82.0)
-    base_temperature = random.uniform(27.0, 35.0)
-    nominal_current = random.uniform(55.0, 100.0)
+    base_voltage = rng.uniform(375.0, 405.0)
+    capacity_kwh = rng.uniform(62.0, 82.0)
+    base_temperature = rng.uniform(27.0, 35.0)
+    nominal_current = rng.uniform(55.0, 100.0)
 
     # Most vehicles are healthy.
-    initial_soh = random.uniform(88.0, 99.0)
+    initial_soh = rng.uniform(88.0, 99.0)
 
     # Intentionally create several different conditions
     # so the dashboard has meaningful fleet intelligence.
     if vehicle_number in [3, 17, 28, 41, 52]:
-        initial_soh = random.uniform(68.0, 82.0)
+        initial_soh = rng.uniform(68.0, 82.0)
 
     if vehicle_number in [9, 34, 47]:
-        initial_soh = random.uniform(82.0, 88.0)
+        initial_soh = rng.uniform(82.0, 88.0)
 
     return {
         "vehicle_id": vehicle_id,
@@ -113,6 +117,43 @@ class BatterySimulationEngine:
 
                 "updated_at": datetime.utcnow(),
             }
+
+
+    # ========================================================
+    # RESTORE FROM STORED TELEMETRY
+    # Without this every restart starts from fresh random values,
+    # which breaks trends and looks like sensor jumps in history.
+    # ========================================================
+
+    def restore_state(
+        self,
+        battery_id: str,
+        reading,
+    ):
+
+        battery = self.batteries.get(
+            battery_id
+        )
+
+        if battery is None or reading is None:
+            return False
+
+        for field, source in (
+            ("voltage", "voltage"),
+            ("current", "current"),
+            ("temperature", "temperature"),
+            ("soc", "soc"),
+            ("soh", "soh"),
+            ("cycle_count", "cycles"),
+        ):
+            value = getattr(reading, source, None)
+
+            if value is not None:
+                battery[field] = value
+
+        battery["updated_at"] = datetime.utcnow()
+
+        return True
 
 
     # ========================================================
