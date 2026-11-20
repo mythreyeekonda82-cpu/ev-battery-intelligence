@@ -32,20 +32,37 @@
     // -----------------------------------------------------
 
     function getBatteryId() {
-        let id =
+    let id = "";
+
+    // Use the dashboard's currently selected vehicle first.
+    if (
+        typeof selectedVehicleId !== "undefined" &&
+        selectedVehicleId
+    ) {
+        id = selectedVehicleId;
+    }
+
+    // Fall back to stored selection if needed.
+    if (!id) {
+        id =
             localStorage.getItem("selectedBatteryId") ||
             localStorage.getItem("selectedVehicleId") ||
             localStorage.getItem("selectedVehicle") ||
             "EV-001";
-
-        id = String(id).trim().toUpperCase();
-
-        if (id.startsWith("EV-")) {
-            id = id.replace("EV-", "BAT-");
-        }
-
-        return id;
     }
+
+    id = String(id).trim().toUpperCase();
+
+    if (id.startsWith("EV-")) {
+        id = id.replace("EV-", "BAT-");
+    }
+
+    if (!id.startsWith("BAT-")) {
+        id = "BAT-" + id;
+    }
+
+    return id;
+}
 
     // -----------------------------------------------------
     // API REQUEST

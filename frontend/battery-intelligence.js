@@ -36,15 +36,27 @@ function calculateBatteryRisk(b) {
         };
     }
 
-    const vr = v < 11.8
-        ? Math.min(100, (11.8 - v) * 35 + 35)
-        : v > 14.7
-            ? Math.min(100, (v - 14.7) * 45 + 35)
+    // batteryLimits() in app.js picks 400 V pack or 12 V limits.
+    const lim = typeof batteryLimits === "function"
+        ? batteryLimits(v)
+        : {
+            vWarnLow: 11.8, vWarnHigh: 14.7,
+            vLowSlope: 35, vHighSlope: 45,
+            iNominal: 2.1, iMax: 5.67
+        };
+
+    const vr = v < lim.vWarnLow
+        ? Math.min(100, (lim.vWarnLow - v) * lim.vLowSlope + 35)
+        : v > lim.vWarnHigh
+            ? Math.min(100, (v - lim.vWarnHigh) * lim.vHighSlope + 35)
             : 0;
 
     const cr = Math.max(
         0,
-        Math.min(100, (Math.abs(c) - 2.1) * 28)
+        Math.min(
+            100,
+            (Math.abs(c) - lim.iNominal) / (lim.iMax - lim.iNominal) * 100
+        )
     );
 
     const tr = t <= 35

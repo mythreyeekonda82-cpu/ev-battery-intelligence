@@ -382,3 +382,72 @@ def get_esp32_telemetry(
         "count": len(devices),
         "devices": devices
     }
+
+
+# ==========================================
+# LATEST READING FOR ONE ESP32 DEVICE
+# Polled by the dashboard in ESP32 mode. The browser cannot reach the
+# ESP32 directly (it sits on a local network, and an HTTPS page may not
+# fetch plain HTTP), so the ESP32 posts to /device and the dashboard
+# reads the stored reading back from here.
+# ==========================================
+
+@router.get("/device/latest")
+def get_latest_esp32_reading(
+    device_id: Optional[str] = None,
+    current_user=Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    if current_user.role != "admin":
+        raise HTTPException(
+            status_code=403,
+            detail="Only administrators can access hardware telemetry."
+        )
+
+    query = db.query(Telemetry)
+
+    if device_id and device_id.strip():
+        query = query.filter(
+            Telemetry.battery_id == device_id.strip()
+        )
+    else:
+        # Without a device ID, use the most recent hardware device.
+        # Simulator batteries are stored as BAT-xxx.
+        query = query.filter(
+            ~Telemetry.battery_id.like("BAT-%")
+        )
+
+    record = (
+        query
+        .order_by(
+            Telemetry.timestamp.desc(),
+            Telemetry.id.desc()
+        )
+        .first()
+    )
+
+    if record is None:
+        raise HTTPException(
+            status_code=404,
+            detail=(
+                f"No readings received from device '{device_id.strip()}' yet."
+                if device_id and device_id.strip()
+                else "No readings received from any ESP32 device yet."
+            )
+        )
+
+    return {
+        "success": True,
+        "device_id": record.battery_id,
+        "voltage": record.voltage,
+        "current": record.current,
+        "power": round((record.power_kw or 0) * 1000, 3),
+        "soc": record.soc,
+        "soh": record.soh,
+        "temperature": record.temperature,
+        "timestamp": (
+            record.timestamp.isoformat()
+            if record.timestamp
+            else None
+        )
+    }

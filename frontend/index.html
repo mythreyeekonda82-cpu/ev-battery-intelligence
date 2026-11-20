@@ -1,123 +1,154 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#07100d">
-  <meta name="description" content="VoltIQ EV Battery Intelligence and Fleet Monitoring">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#07100d">
+    <meta name="description" content="VoltIQ EV Battery Intelligence and Fleet Monitoring">
 
-  <title>VoltIQ | EV Battery Intelligence</title>
+    <title>VoltIQ | EV Battery Intelligence</title>
 
-  <link rel="stylesheet" href="styles.css">
-  <link rel="stylesheet" href="advanced-intelligence.css">
+    <!-- STYLESHEETS -->
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="advanced-intelligence.css">
+    <link rel="stylesheet" href="voltiq-assistant.css">
 
-  <script src="battery-intelligence.js" defer></script>
-  <script src="app.js" defer></script>
-  <script src="battery-intelligence-api.js" defer></script>
-  <script src="advanced-intelligence.js" defer></script>
+    <!-- MAIN DASHBOARD MUST LOAD FIRST -->
+    <script src="app.js" defer></script>
+
+    <!-- EXISTING SIX BATTERY INTELLIGENCE FEATURES -->
+    <script src="battery-intelligence.js" defer></script>
+    <script src="battery-intelligence-api.js" defer></script>
+
+    <!-- EIGHT EXISTING ADVANCED AI FEATURES -->
+    <script src="advanced-intelligence.js" defer></script>
+
+    <!-- EIGHT NEW BATTERY PROTECTION INTELLIGENCE FEATURES -->
+    <script src="battery-protection-intelligence.js" defer></script>
+
+    <!-- CHATBOT, GPS AND WHATSAPP -->
+    <script src="voltiq-assistant.js" defer></script>
+
 </head>
 
 <body>
 
-  <div id="loginScreen" class="login-screen">
+    <!-- LOGIN SCREEN -->
+    <div id="loginScreen" class="login-screen">
 
-    <div class="login-glow glow-one"></div>
-    <div class="login-glow glow-two"></div>
+        <div class="login-glow glow-one"></div>
+        <div class="login-glow glow-two"></div>
 
-    <form id="loginForm" class="login-card">
+        <form id="loginForm" class="login-card">
 
-      <div class="brand">
-        <div class="brand-icon">⚡</div>
+            <div class="brand">
+                <div class="brand-icon">⚡</div>
 
-        <div>
-          <h1>Volt<span>IQ</span></h1>
-          <p>BATTERY INTELLIGENCE</p>
-        </div>
-      </div>
+                <div>
+                    <h1>Volt<span>IQ</span></h1>
+                    <p>BATTERY INTELLIGENCE</p>
+                </div>
+            </div>
 
-      <div class="login-heading">
-        <h2>EV Battery Intelligence</h2>
-        <p>
-          Secure EV battery monitoring, fleet intelligence
-          and health analytics.
-        </p>
-      </div>
+            <div class="login-heading">
+                <h2>EV Battery Intelligence</h2>
 
-      <label for="loginEmail">Email</label>
+                <p>
+                    Secure EV battery monitoring, fleet intelligence
+                    and health analytics.
+                </p>
+            </div>
 
-      <div class="input-box">
-        <span>✉</span>
-        <input
-          id="loginEmail"
-          type="email"
-          required
-          autocomplete="username"
-          placeholder="Enter email"
-          value="user@evbattery.demo"
-        >
-      </div>
+            <label for="loginEmail">Email</label>
 
-      <label for="loginPassword">Password</label>
+            <div class="input-box">
+                <span>✉</span>
 
-      <div class="input-box">
-        <span>⌑</span>
-        <input
-          id="loginPassword"
-          type="password"
-          required
-          autocomplete="current-password"
-          placeholder="Enter password"
-        >
-      </div>
+                <input
+                    id="loginEmail"
+                    type="email"
+                    required
+                    autocomplete="username"
+                    placeholder="Enter email"
+                    value="user@evbattery.demo"
+                >
+            </div>
 
-      <label for="connectionMode">Connection mode</label>
+            <label for="loginPassword">Password</label>
 
-      <div class="input-box">
-        <span>⌁</span>
+            <div class="input-box">
+                <span>⌑</span>
 
-        <select
-          id="connectionMode"
-          style="width:100%;padding:14px 0;border:0;outline:0;color:white;background:transparent"
-        >
-          <option value="DEMO" style="color:#111">
-            Demo mode — simulated readings
-          </option>
+                <input
+                    id="loginPassword"
+                    type="password"
+                    required
+                    autocomplete="current-password"
+                    placeholder="Enter password"
+                >
+            </div>
 
-          <option value="ESP32" style="color:#111">
-            ESP32 mode — real device readings
-          </option>
-        </select>
-      </div>
+            <label for="connectionMode">Connection mode</label>
 
-      <button class="login-btn" type="submit">
-        <span>LOGIN</span>
-        <span>→</span>
-      </button>
+            <div class="input-box">
+                <span>⌁</span>
 
-      <div id="loginMessage" class="login-message" role="alert"></div>
+                <select
+                    id="connectionMode"
+                    style="
+                        width:100%;
+                        padding:14px 0;
+                        border:0;
+                        outline:0;
+                        color:white;
+                        background:transparent;
+                    "
+                >
+                    <option value="DEMO" style="color:#111">
+                        Demo mode — simulated readings
+                    </option>
 
-      <div class="demo-login">
-        <strong>DEMO LOGIN ACCOUNTS</strong>
+                    <option value="ESP32" style="color:#111">
+                        ESP32 mode — real device readings
+                    </option>
+                </select>
+            </div>
 
-        <p>Admin: admin@evbattery.demo / admin1234</p>
-        <p>User: user@evbattery.demo / user1234</p>
+            <button class="login-btn" type="submit">
+                <span>LOGIN</span>
+                <span>→</span>
+            </button>
 
-        <p>
-          Choose Demo or ESP32 mode above.
-          Your account determines your access level.
-        </p>
-      </div>
+            <div
+                id="loginMessage"
+                class="login-message"
+                role="alert"
+            ></div>
 
-      <div class="login-footer">
-        VOLTIQ · EV BATTERY MONITORING PLATFORM
-      </div>
+            <div class="demo-login">
+                <strong>DEMO LOGIN ACCOUNTS</strong>
 
-    </form>
+                <p>Admin: admin@evbattery.demo / admin1234</p>
+                <p>User: user@evbattery.demo / user1234</p>
 
-  </div>
+                <p>
+                    Choose Demo or ESP32 mode above.
+                    Your account determines your access level.
+                </p>
+            </div>
 
-  <div id="app" class="app hidden"></div>
-  <div id="toast" class="toast"></div>
+            <div class="login-footer">
+                VOLTIQ · EV BATTERY MONITORING PLATFORM
+            </div>
+
+        </form>
+    </div>
+
+    <!-- MAIN APPLICATION -->
+    <div id="app" class="app hidden"></div>
+
+    <!-- TOAST NOTIFICATIONS -->
+    <div id="toast" class="toast"></div>
 
 </body>
 </html>

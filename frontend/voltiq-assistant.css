@@ -1,0 +1,222 @@
+/* =========================================================
+   VoltIQ assistant, GPS charging stations and WhatsApp
+   Uses the design tokens defined in styles.css.
+   ========================================================= */
+
+#voltiqAddonPanel {
+    width: 100%;
+    margin-top: 24px;
+}
+
+.vi-addon-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+}
+
+.vi-addon-card {
+    min-width: 0;
+    padding: 22px;
+    border: 1px solid var(--line-soft);
+    border-radius: var(--r-lg);
+    background: linear-gradient(150deg, var(--panel2), var(--panel));
+}
+
+.vi-addon-card:last-child {
+    grid-column: 1 / -1;
+}
+
+.vi-addon-card h2 {
+    margin: 8px 0 4px;
+    font-size: 18px;
+    letter-spacing: -0.3px;
+}
+
+.vi-addon-card p {
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.6;
+}
+
+.vi-addon-label {
+    color: var(--green);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1.7px;
+}
+
+.vi-addon-icon {
+    width: 42px;
+    height: 42px;
+    display: grid;
+    place-items: center;
+    border-radius: var(--r-md);
+    background: var(--green-tint);
+    color: var(--green);
+    font-size: 20px;
+}
+
+.vi-addon-heading {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+}
+
+
+/* Chat */
+
+.vi-chat-messages {
+    height: 260px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin: 14px 0 12px;
+    padding: 14px;
+    overflow-y: auto;
+    border: 1px solid var(--line-soft);
+    border-radius: var(--r-md);
+    background: rgba(0, 0, 0, 0.22);
+}
+
+.vi-chat-bot,
+.vi-chat-user {
+    max-width: 85%;
+    padding: 10px 14px;
+    font-size: 13px;
+    line-height: 1.6;
+    overflow-wrap: anywhere;
+}
+
+.vi-chat-bot {
+    align-self: flex-start;
+    border: 1px solid var(--line-soft);
+    border-radius: 4px 14px 14px 14px;
+    background: var(--wash-strong);
+    color: var(--text-2);
+}
+
+.vi-chat-user {
+    align-self: flex-end;
+    border-radius: 14px 4px 14px 14px;
+    background: var(--green-tint);
+    border: 1px solid var(--green-edge);
+    color: var(--text);
+}
+
+.vi-chat-form {
+    display: flex;
+    gap: 8px;
+}
+
+.vi-chat-form input,
+.vi-addon-card input {
+    width: 100%;
+    min-width: 0;
+    padding: 11px 13px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: rgba(0, 0, 0, 0.25);
+    color: var(--text);
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.vi-chat-form input:focus,
+.vi-addon-card input:focus {
+    outline: none;
+    border-color: var(--green-edge);
+    box-shadow: var(--ring);
+}
+
+.vi-chat-form input::placeholder,
+.vi-addon-card input::placeholder {
+    color: var(--dim);
+}
+
+.vi-chat-form button,
+.vi-addon-button {
+    padding: 11px 18px;
+    border: 0;
+    border-radius: 10px;
+    background: var(--green);
+    color: #04110a;
+    font-weight: 700;
+    white-space: nowrap;
+    transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.vi-chat-form button:hover,
+.vi-addon-button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 8px 20px rgba(66, 245, 161, 0.25);
+}
+
+.vi-addon-button {
+    width: 100%;
+    margin: 12px 0;
+}
+
+.vi-chat-form button:disabled,
+.vi-addon-button:disabled {
+    opacity: 0.5;
+    cursor: wait;
+    transform: none;
+    box-shadow: none;
+}
+
+
+/* Charging stations */
+
+.vi-location-status {
+    margin: 12px 0;
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 1.6;
+    overflow-wrap: anywhere;
+}
+
+.vi-station {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 13px 0;
+    border-top: 1px solid var(--line-soft);
+}
+
+.vi-station strong {
+    font-size: 14px;
+}
+
+.vi-station span,
+.vi-station small {
+    color: var(--muted);
+    font-size: 12px;
+}
+
+.vi-station a {
+    width: fit-content;
+    margin-top: 4px;
+    color: var(--green);
+    font-size: 12px;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.vi-station a:hover {
+    text-decoration: underline;
+}
+
+
+@media (max-width: 750px) {
+    .vi-addon-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .vi-addon-card:last-child {
+        grid-column: auto;
+    }
+
+    .vi-addon-card {
+        padding: 18px;
+    }
+}

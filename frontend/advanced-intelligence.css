@@ -1,219 +1,259 @@
-/* =====================================================
-   VoltIQ Advanced Battery Intelligence
-   Separate styling - does not replace existing styles.css
-   ===================================================== */
+/* =========================================================
+   VoltIQ intelligence sections
+   Advanced intelligence and battery protection intelligence.
+   Uses the design tokens defined in styles.css.
+   ========================================================= */
 
 .vi-advanced-section {
     width: 100%;
-    margin: 30px 0;
-    padding: 24px;
-    border-radius: 16px;
-    background: var(--card-bg, #ffffff);
-    border: 1px solid var(--border-color, #e5e7eb);
-    box-sizing: border-box;
+    margin: 24px 0;
+    padding: 26px;
+    border: 1px solid var(--line-soft);
+    border-radius: var(--r-xl);
+    background:
+        radial-gradient(circle at 100% 0%, rgba(66, 245, 161, 0.06), transparent 35%),
+        linear-gradient(150deg, var(--panel2), var(--panel));
 }
 
 .vi-advanced-heading {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    gap: 15px;
     flex-wrap: wrap;
+    gap: 14px;
     margin-bottom: 22px;
+    padding-bottom: 18px;
+    border-bottom: 1px solid var(--line-soft);
 }
 
 .vi-advanced-heading h2 {
-    margin: 0 0 6px;
-    font-size: 22px;
-    font-weight: 700;
-    color: var(--text-color, #172033);
+    font-size: 20px;
+    letter-spacing: -0.4px;
 }
 
 .vi-advanced-heading p {
-    margin: 0;
-    font-size: 13px;
-    color: var(--muted-color, #64748b);
+    margin-top: 4px;
+    color: var(--muted);
+    font-size: 12px;
 }
 
 .vi-advanced-heading button,
-#viAdvancedRetry {
-    border: none;
-    border-radius: 8px;
-    padding: 10px 18px;
-    background: var(--primary-color, #2563eb);
-    color: #ffffff;
-    font-weight: 600;
-    cursor: pointer;
+#viAdvancedRetry,
+#viProtectionRetry {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    min-height: 38px;
+    padding: 0 16px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: var(--wash);
+    color: var(--text-2);
+    font-size: 12px;
+    font-weight: 700;
+    transition: border-color 0.15s, background 0.15s, color 0.15s;
 }
 
 .vi-advanced-heading button:hover,
-#viAdvancedRetry:hover {
-    opacity: 0.88;
+#viAdvancedRetry:hover,
+#viProtectionRetry:hover {
+    border-color: var(--green-edge);
+    background: var(--wash-strong);
+    color: var(--text);
 }
+
 
 /* Connection status */
 
 .vi-connection-status {
     display: flex;
     flex-direction: column;
-    gap: 5px;
-    padding: 14px 16px;
-    margin-bottom: 20px;
-    border-radius: 10px;
-    background: var(--surface-color, #f1f5f9);
-    border-left: 4px solid var(--primary-color, #2563eb);
+    gap: 3px;
+    margin-bottom: 18px;
+    padding: 13px 16px;
+    border: 1px solid var(--green-edge);
+    border-left: 3px solid var(--green);
+    border-radius: var(--r-md);
+    background: var(--green-tint);
 }
 
 .vi-connection-status strong {
-    font-size: 14px;
-    color: var(--text-color, #172033);
+    font-size: 13px;
 }
 
 .vi-connection-status span {
+    color: var(--muted);
     font-size: 12px;
-    color: var(--muted-color, #64748b);
 }
 
-/* Current battery readings */
+
+/* Live readings strip */
 
 .vi-current-readings {
     display: grid;
     grid-template-columns: repeat(6, minmax(0, 1fr));
-    gap: 12px;
-    margin-bottom: 22px;
+    gap: 10px;
+    margin-bottom: 20px;
 }
 
 .vi-current-readings > div {
+    min-width: 0;
     display: flex;
     flex-direction: column;
-    gap: 7px;
-    padding: 14px;
-    border-radius: 10px;
-    background: var(--surface-color, #f8fafc);
-    border: 1px solid var(--border-color, #e5e7eb);
-    min-width: 0;
+    gap: 6px;
+    padding: 13px 14px;
+    border: 1px solid var(--line-soft);
+    border-radius: var(--r-md);
+    background: rgba(0, 0, 0, 0.2);
 }
 
 .vi-current-readings span {
-    font-size: 12px;
-    color: var(--muted-color, #64748b);
+    color: var(--muted);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
 }
 
 .vi-current-readings strong {
-    font-size: 17px;
-    font-weight: 700;
-    color: var(--text-color, #172033);
+    font-size: 18px;
+    letter-spacing: -0.4px;
+    font-variant-numeric: tabular-nums;
     overflow-wrap: anywhere;
 }
 
-/* Eight feature cards */
+
+/* Feature cards */
 
 .vi-advanced-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 18px;
+    gap: 14px;
 }
 
 .vi-advanced-card {
     min-width: 0;
-    padding: 20px;
-    border-radius: 12px;
-    background: var(--surface-color, #f8fafc);
-    border: 1px solid var(--border-color, #e5e7eb);
-    box-sizing: border-box;
-    transition: box-shadow 0.2s ease, transform 0.2s ease;
+    padding: 20px 22px;
+    border: 1px solid var(--line-soft);
+    border-radius: var(--r-lg);
+    background: rgba(0, 0, 0, 0.18);
+    transition: border-color 0.2s;
 }
 
 .vi-advanced-card:hover {
-    box-shadow: 0 5px 18px rgba(0, 0, 0, 0.06);
-    transform: translateY(-2px);
+    border-color: var(--line);
 }
 
 .vi-advanced-card h3 {
-    margin: 0 0 12px;
-    font-size: 16px;
-    font-weight: 700;
-    color: var(--text-color, #172033);
+    margin-bottom: 6px;
+    font-size: 15px;
+    letter-spacing: -0.2px;
 }
 
 .vi-card-description {
+    margin-bottom: 12px;
+    color: var(--dim);
     font-size: 12px;
-    color: var(--muted-color, #64748b);
+    line-height: 1.5;
 }
 
 .vi-card-content {
+    color: var(--text-2);
     font-size: 13px;
-    color: var(--text-color, #172033);
     line-height: 1.6;
 }
 
+.vi-card-content p {
+    margin-top: 6px;
+}
+
+.vi-card-content p:first-child {
+    margin-top: 0;
+}
+
+.vi-card-content strong {
+    color: var(--text);
+}
+
 .vi-main-metric {
-    margin: 10px 0 4px;
-    font-size: 29px;
-    font-weight: 800;
-    color: var(--primary-color, #2563eb);
+    margin: 6px 0 6px;
+    color: var(--green);
+    font-size: 28px;
+    font-weight: 700;
+    line-height: 1.15;
+    letter-spacing: -0.8px;
+    font-variant-numeric: tabular-nums;
     overflow-wrap: anywhere;
 }
 
 .vi-muted {
-    margin-top: 12px;
+    margin-top: 10px;
+    color: var(--muted);
     font-size: 11px;
     line-height: 1.5;
-    color: var(--muted-color, #64748b);
 }
-
-/* Prediction values */
 
 .vi-metric-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 10px;
-    margin-top: 15px;
+    margin: 8px 0 14px;
 }
 
 .vi-metric-grid > div {
-    padding: 10px;
-    border-radius: 8px;
-    background: var(--card-bg, #ffffff);
-    border: 1px solid var(--border-color, #e5e7eb);
-    font-size: 12px;
+    padding: 12px;
+    border: 1px solid var(--line-soft);
+    border-radius: var(--r-md);
+    background: var(--wash);
+    color: var(--muted);
+    font-size: 11px;
 }
 
 .vi-metric-grid strong {
     display: block;
-    margin-top: 4px;
-    font-size: 15px;
+    margin: 4px 0 6px;
+    color: var(--text);
+    font-size: 20px;
+    letter-spacing: -0.4px;
+    font-variant-numeric: tabular-nums;
 }
 
-/* Recommendation and anomaly lists */
+
+/* Lists */
 
 .vi-list {
-    margin: 12px 0 0;
-    padding-left: 19px;
+    margin: 8px 0 0;
+    padding-left: 18px;
 }
 
 .vi-list li {
-    margin-bottom: 10px;
+    margin-bottom: 7px;
     line-height: 1.5;
     overflow-wrap: anywhere;
+}
+
+.vi-list li::marker {
+    color: var(--green);
 }
 
 .vi-priority {
     display: inline-block;
     margin-right: 7px;
     padding: 2px 7px;
-    border-radius: 5px;
-    background: #fee2e2;
-    color: #991b1b;
-    font-size: 10px;
+    border-radius: 20px;
+    background: var(--red-tint);
+    color: var(--red);
+    font-size: 9px;
     font-weight: 700;
+    letter-spacing: 0.8px;
     text-transform: uppercase;
 }
+
 
 /* Fleet comparison */
 
 .vi-fleet-list {
-    margin-top: 14px;
+    margin-top: 12px;
 }
 
 .vi-fleet-row {
@@ -221,39 +261,211 @@
     grid-template-columns: 1fr 1fr auto;
     align-items: center;
     gap: 8px;
-    padding: 10px 0;
-    border-bottom: 1px solid var(--border-color, #e5e7eb);
+    padding: 9px 0;
+    border-bottom: 1px solid var(--line-soft);
     font-size: 12px;
 }
 
 .vi-fleet-row:last-child {
-    border-bottom: none;
+    border-bottom: 0;
 }
 
 .vi-fleet-row span {
-    color: var(--muted-color, #64748b);
+    color: var(--muted);
 }
 
-/* Loading and error messages */
 
-.vi-advanced-error {
-    padding: 15px;
+/* Errors and timestamps */
+
+.vi-advanced-error,
+.vi-refresh-error {
     margin: 12px 0;
-    border-radius: 9px;
-    background: #fef2f2;
-    border: 1px solid #fecaca;
-    color: #991b1b;
+    padding: 13px 15px;
+    border: 1px solid rgba(255, 105, 120, 0.3);
+    border-radius: var(--r-md);
+    background: var(--red-tint);
+    color: var(--text-2);
     font-size: 13px;
 }
 
 .vi-last-updated {
-    margin: 18px 0 0;
+    margin-top: 16px;
     text-align: right;
+    color: var(--dim);
     font-size: 11px;
-    color: var(--muted-color, #64748b);
 }
 
-/* Responsive layout */
+
+/* Severity tags */
+
+.vi-sev {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    margin: 0 6px 0 0;
+    padding: 2px 8px;
+    border-radius: 20px;
+    background: var(--wash-strong);
+    color: var(--muted);
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    vertical-align: 1px;
+    white-space: nowrap;
+}
+
+.vi-sev::before {
+    content: "";
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: currentColor;
+}
+
+.vi-sev-normal,
+.vi-sev-safe,
+.vi-sev-conf-high,
+.vi-sev-beh-stable,
+.vi-sev-chk-agree,
+.vi-sev-learn-learned {
+    background: var(--green-tint);
+    color: var(--green);
+}
+
+.vi-sev-warning,
+.vi-sev-caution,
+.vi-sev-conf-medium,
+.vi-sev-beh-changed,
+.vi-sev-learn-earlier,
+.vi-sev-pri-soon {
+    background: var(--orange-tint);
+    color: var(--orange);
+}
+
+.vi-sev-high {
+    background: rgba(255, 140, 100, 0.14);
+    color: #ff9a76;
+}
+
+.vi-sev-pri-planned,
+.vi-sev-learn-learning {
+    background: var(--blue-tint);
+    color: var(--blue);
+}
+
+.vi-sev-critical,
+.vi-sev-unsafe,
+.vi-sev-conf-low,
+.vi-sev-chk-disagree,
+.vi-sev-pri-immediate {
+    background: var(--red-tint);
+    color: var(--red);
+}
+
+
+/* Fault combinations and checks */
+
+.vi-combo {
+    margin: 10px 0;
+    padding: 12px 14px;
+    border: 1px solid var(--line-soft);
+    border-left: 3px solid var(--orange);
+    border-radius: var(--r-md);
+    background: var(--wash);
+}
+
+.vi-combo p {
+    margin: 6px 0 0;
+}
+
+.vi-check {
+    padding: 9px 0;
+    border-bottom: 1px solid var(--line-soft);
+}
+
+.vi-check:last-of-type {
+    border-bottom: 0;
+}
+
+.vi-check .vi-muted {
+    margin-top: 3px;
+}
+
+
+/* Parameter tables */
+
+.vi-param-table {
+    width: 100%;
+    margin-top: 12px;
+    border-collapse: collapse;
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+}
+
+.vi-param-table th,
+.vi-param-table td {
+    padding: 7px 6px;
+    text-align: left;
+    border-bottom: 1px solid var(--line-soft);
+}
+
+.vi-param-table th {
+    color: var(--dim);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+}
+
+.vi-param-table td:first-child {
+    color: var(--muted);
+}
+
+.vi-param-table tr:last-child td {
+    border-bottom: 0;
+}
+
+
+/* Confidence factors */
+
+.vi-factor {
+    margin-top: 12px;
+}
+
+.vi-factor-head {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.vi-factor-head span:last-child {
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+}
+
+.vi-factor-bar {
+    height: 6px;
+    margin-top: 6px;
+    overflow: hidden;
+    border-radius: 6px;
+    background: rgba(0, 0, 0, 0.3);
+}
+
+.vi-factor-bar span {
+    display: block;
+    height: 100%;
+    border-radius: 6px;
+    background: linear-gradient(90deg, var(--green-deep), var(--green));
+}
+
+.vi-factor .vi-muted {
+    margin-top: 4px;
+}
+
+
+/* Responsive */
 
 @media (max-width: 1100px) {
     .vi-current-readings {
@@ -261,13 +473,15 @@
     }
 }
 
-@media (max-width: 700px) {
-    .vi-advanced-section {
-        padding: 15px;
-    }
-
+@media (max-width: 860px) {
     .vi-advanced-grid {
         grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 700px) {
+    .vi-advanced-section {
+        padding: 18px;
     }
 
     .vi-current-readings {
@@ -275,15 +489,17 @@
     }
 
     .vi-advanced-heading h2 {
-        font-size: 19px;
+        font-size: 18px;
+    }
+
+    .vi-param-table {
+        display: block;
+        overflow-x: auto;
     }
 }
 
 @media (max-width: 380px) {
-    .vi-current-readings {
-        grid-template-columns: 1fr;
-    }
-
+    .vi-current-readings,
     .vi-metric-grid {
         grid-template-columns: 1fr;
     }

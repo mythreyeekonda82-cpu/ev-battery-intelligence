@@ -25,9 +25,14 @@ let fleetLoading = false;
 
 let demoTick = 0;
 
-let deviceUrl =
-    localStorage.getItem("voltiq_device_url") ||
-    "http://192.168.4.1/telemetry";
+// ESP32 readings come from the backend: the ESP32 posts to
+// /api/telemetry/device and the dashboard reads them back. Empty means
+// "the most recent device that has posted".
+let deviceId = localStorage.getItem("voltiq_device_id") || "";
+
+// Last ESP32 error shown, so polling every few seconds does not
+// repeat the same toast.
+let esp32LastError = "";
 
 let telemetry = {
     voltage: VOLTIQ_MODE === "DEMO" ? 12.6 : null,
@@ -42,6 +47,9 @@ let telemetry = {
 
 let esp32Connected = false;
 let esp32HasData = false;
+
+// A reading older than this is shown as stale, not live.
+const ESP32_STALE_MS = 60 * 1000;
 
 /* ================= HELPERS ================= */
 
@@ -73,20 +81,51 @@ function toast(message) {
     setTimeout(() => el.classList.remove("show"), 2600);
 }
 
-function status() {
+/* The demo fleet uses ~400 V traction packs, while an ESP32 bench rig
+   reads a 12 V battery. Pick limits by voltage scale so neither is
+   judged against the other's thresholds. Pack limits match the
+   backend protection intelligence. */
+function batteryLimits(voltage) {
+    if (voltage !== null && voltage !== undefined && Number(voltage) > 60) {
+        return {
+            vCritLow: 330, vWarnLow: 350, vWarnHigh: 430, vCritHigh: 450,
+            vLowSlope: 3.25, vHighSlope: 3.25,
+            tWarn: 40, tCrit: 45,
+            iNominal: 100, iMax: 145
+        };
+    }
+
+    return {
+        vCritLow: 11.3, vWarnLow: 11.8, vWarnHigh: 14.7, vCritHigh: 15,
+        vLowSlope: 35, vHighSlope: 45,
+        tWarn: 38, tCrit: 45,
+        iNominal: 2.1, iMax: 5.67
+    };
+}
+
+function batteryStatus(b) {
+    const lim = batteryLimits(b.voltage);
+    const has = value => value !== null && value !== undefined;
+
+    // State of health limits match the backend (85% warning, 70% critical).
     if (
-        telemetry.temperature >= 45 ||
-        telemetry.voltage < 11.3 ||
-        telemetry.voltage > 15
+        (has(b.temperature) && b.temperature >= lim.tCrit) ||
+        (has(b.voltage) && (b.voltage < lim.vCritLow || b.voltage > lim.vCritHigh)) ||
+        (has(b.soh) && b.soh < 70)
     ) return "CRITICAL";
 
     if (
-        telemetry.temperature >= 38 ||
-        telemetry.voltage < 11.8 ||
-        telemetry.soc < 20
+        (has(b.temperature) && b.temperature >= lim.tWarn) ||
+        (has(b.voltage) && (b.voltage < lim.vWarnLow || b.voltage > lim.vWarnHigh)) ||
+        (has(b.soc) && b.soc < 20) ||
+        (has(b.soh) && b.soh < 85)
     ) return "WARNING";
 
     return "HEALTHY";
+}
+
+function status() {
+    return batteryStatus(telemetry);
 }
 
 function getRisk() {
@@ -321,28 +360,7 @@ function numberOrNull(value) {
 }
 
 function vehicleStatus(v) {
-    const b = vehicleBattery(v);
-
-    if (b.temperature !== null && b.temperature >= 45) {
-        return "CRITICAL";
-    }
-
-    if (
-        b.voltage !== null &&
-        (b.voltage < 11.3 || b.voltage > 15)
-    ) {
-        return "CRITICAL";
-    }
-
-    if (b.temperature !== null && b.temperature >= 38) {
-        return "WARNING";
-    }
-
-    if (b.soc !== null && b.soc < 20) {
-        return "WARNING";
-    }
-
-    return "HEALTHY";
+    return batteryStatus(vehicleBattery(v));
 }
 
 function selectVehicleData(v) {
@@ -674,7 +692,33 @@ function renderPage(which) {
             `;
         }
     }
+/* =====================================================
+   3. BATTERY MONITOR
+===================================================== */
 
+if (page === "battery") {
+    html = heading(
+        "BATTERY INTELLIGENCE",
+        "Battery Monitor",
+        "Existing battery intelligence and advanced AI predictions."
+    ) + `
+        <div class="panel">
+            <div class="panel-head">
+                <div>
+                    <h2>${esc(selectedVehicleId || "EV-001")}</h2>
+                    <p>Battery intelligence, advanced predictions and protection analysis for this vehicle.</p>
+                </div>
+                <span class="status ${s.toLowerCase()}">${s}</span>
+            </div>
+            <div class="stats-grid">
+                ${stat("STATE OF CHARGE", fmt(b.soc, 0) + "%", "Battery charge")}
+                ${stat("STATE OF HEALTH", fmt(b.soh, 1) + "%", "Battery condition")}
+                ${stat("PACK VOLTAGE", fmt(b.voltage, 2) + " V", "Measured voltage")}
+                ${stat("TEMPERATURE", fmt(b.temperature, 1) + " °C", "Battery temperature")}
+            </div>
+        </div>
+    `;
+}
  
 
     /* =====================================================
@@ -688,8 +732,12 @@ function renderPage(which) {
             "Warnings generated from current battery measurements."
         ) + `
         <div class="panel">
-            <h2>Current Battery Alerts</h2>
-            <br>
+            <div class="panel-head">
+                <div>
+                    <h2>Current Battery Alerts</h2>
+                    <p>Checked against the limits for this battery's voltage range.</p>
+                </div>
+            </div>
             ${alertRows()}
         </div>
         `;
@@ -798,26 +846,56 @@ function renderPage(which) {
         ) + `
 
         <div class="panel">
-            <h2>Device Connection</h2>
-            <p class="muted">
-                Set the ESP32 telemetry endpoint used in ESP32 mode.
-            </p>
-
-            <div class="field">
-                <label>ESP32 Telemetry URL</label>
-                <input
-                    id="deviceUrl"
-                    value="${esc(deviceUrl)}"
-                    placeholder="http://192.168.4.1/telemetry">
+            <div class="panel-head">
+                <div>
+                    <h2>Device Connection</h2>
+                    <p>
+                        The ESP32 sends readings to this server, and the
+                        dashboard reads them from here in ESP32 mode.
+                    </p>
+                </div>
+                ${VOLTIQ_MODE === "ESP32"
+                    ? `<span class="status ${esp32Connected ? "healthy" : "warning"}">
+                           ${esp32Connected ? "RECEIVING" : esp32HasData ? "STALE" : "NO DATA"}
+                       </span>`
+                    : ""}
             </div>
 
-            <button class="primary-btn" onclick="saveDeviceUrl()">
-                Save endpoint
+            <div class="field">
+                <label>ESP32 device ID</label>
+                <input
+                    id="deviceId"
+                    value="${esc(deviceId)}"
+                    placeholder="Leave empty to use the most recent device">
+            </div>
+
+            <button class="primary-btn" onclick="saveDeviceId()">
+                Save device
             </button>
 
+            ${VOLTIQ_MODE === "ESP32" && esp32LastError
+                ? `<p class="muted">Last result: ${esc(esp32LastError)}</p>`
+                : VOLTIQ_MODE === "ESP32" && esp32HasData && telemetry.updated
+                    ? `<p class="muted">Last reading received ${esc(new Date(telemetry.updated).toLocaleString())}.</p>`
+                    : ""}
+        </div>
+
+        <div class="panel">
+            <h2>ESP32 Firmware Setup</h2>
+            <p>Program the ESP32 to send an HTTPS POST every few seconds:</p>
+
+            <table class="data-table">
+                <tr><th>SETTING</th><th>VALUE</th></tr>
+                <tr><td>URL</td><td>${esc(location.origin)}/api/telemetry/device</td></tr>
+                <tr><td>Method</td><td>POST</td></tr>
+                <tr><td>Headers</td><td>Content-Type: application/json · X-API-Key: your ESP32_API_KEY</td></tr>
+                <tr><td>JSON body</td><td>device_id, voltage, current, power, soc, soh, temperature</td></tr>
+            </table>
+
             <p class="muted">
-                Expected JSON fields: voltage, current,
-                temperature, soc and soh.
+                ESP32_API_KEY must be set as an environment variable on the
+                server. The ESP32 needs internet access; its local address
+                (such as 192.168.4.1) cannot be reached from this website.
             </p>
         </div>
 
@@ -908,12 +986,7 @@ function renderFleetOverview() {
 
         return `
             <button
-                class="vehicle-card"
-                style="
-                    text-align:left;
-                    cursor:pointer;
-                    border:1px solid ${selected ? "var(--green)" : "var(--line)"};
-                "
+                class="vehicle-card ${selected ? "is-selected" : ""}"
                 onclick="selectFleetVehicle('${encodeURIComponent(id)}')">
 
                 <div class="card-top">
@@ -942,15 +1015,15 @@ function renderFleetOverview() {
                     </div>
                 </div>
 
-                <div style="margin-top:12px;color:var(--green)">
-                    Open vehicle details →
+                <div class="card-link">
+                    Open vehicle details <span>→</span>
                 </div>
             </button>
         `;
     }).join("");
 
     return `
-        <section class="panel" style="margin-top:22px">
+        <section class="panel">
 
             <div class="panel-head">
                 <div>
@@ -967,7 +1040,7 @@ function renderFleetOverview() {
                     </p>
                 </div>
 
-                <span class="status healthy">
+                <span class="mode-badge">
                     ${total} VEHICLES
                 </span>
             </div>
@@ -983,12 +1056,12 @@ function renderFleetOverview() {
                 ${stat("CRITICAL", counts.CRITICAL, "Vehicles requiring investigation")}
             </div>
 
-            <div class="stats-grid" style="margin-top:12px">
+            <div class="stats-grid">
                 ${stat("AVERAGE SOC", average(socs) === "—" ? "—" : average(socs) + "%", "Available readings")}
                 ${stat("AVERAGE SOH", average(sohs) === "—" ? "—" : average(sohs) + "%", "Available readings")}
             </div>
 
-            <div class="panel-head" style="margin-top:20px">
+            <div class="panel-head">
                 <div>
                     <h2>Vehicle List</h2>
                     <p>Click a vehicle card to open its details.</p>
@@ -1016,24 +1089,25 @@ function renderFleetOverview() {
 
 function alertRows() {
     const alerts = [];
+    const lim = batteryLimits(telemetry.voltage);
 
-    if (telemetry.temperature >= 38) {
+    if (telemetry.temperature >= lim.tWarn) {
         alerts.push([
             "High battery temperature",
             `Temperature is ${fmt(telemetry.temperature)} °C`,
-            "warning"
+            telemetry.temperature >= lim.tCrit ? "critical" : "warning"
         ]);
     }
 
-    if (telemetry.voltage < 11.8) {
+    if (telemetry.voltage < lim.vWarnLow) {
         alerts.push([
             "Low battery voltage",
             `Voltage is ${fmt(telemetry.voltage, 2)} V`,
-            "warning"
+            telemetry.voltage < lim.vCritLow ? "critical" : "warning"
         ]);
     }
 
-    if (telemetry.voltage > 14.7) {
+    if (telemetry.voltage > lim.vWarnHigh) {
         alerts.push([
             "High battery voltage",
             `Voltage is ${fmt(telemetry.voltage, 2)} V`,
@@ -1051,22 +1125,22 @@ function alertRows() {
 
     if (!alerts.length) {
         return `
-            <p class="muted">
+            <div class="empty-state">
                 No active alerts. Battery readings are within
-                the configured demo thresholds.
-            </p>
+                the configured thresholds.
+            </div>
         `;
     }
 
-    return alerts.map(a => `
-        <p style="padding:13px;border-bottom:1px solid var(--line)">
+    return `<div class="alert-list">${alerts.map(a => `
+        <div class="alert-row ${a[2]}">
             <span class="status ${a[2]}">${a[2].toUpperCase()}</span>
-            &nbsp;
-            <b>${esc(a[0])}</b>
-            <br>
-            <span class="muted">${esc(a[1])}</span>
-        </p>
-    `).join("");
+            <div>
+                <b>${esc(a[0])}</b>
+                <span class="muted">${esc(a[1])}</span>
+            </div>
+        </div>
+    `).join("")}</div>`;
 }
 
 
@@ -1106,16 +1180,31 @@ function updateDemo() {
 
 async function pollEsp32() {
     try {
-        const response = await fetch(deviceUrl, {
-            cache: "no-store"
-        });
+        const query = deviceId
+            ? "?device_id=" + encodeURIComponent(deviceId)
+            : "";
+
+        const response = await authenticatedFetch(
+            "/api/telemetry/device/latest" + query,
+            { cache: "no-store" }
+        );
 
         if (!response.ok) {
-            throw new Error("HTTP " + response.status);
+            let detail = "HTTP " + response.status;
+
+            try {
+                detail = (await response.json()).detail || detail;
+            } catch {
+                // Keep the status code.
+            }
+
+            throw new Error(detail);
         }
 
-        const data = await response.json();
-        const x = data.battery || data;
+        const x = await response.json();
+
+        esp32HasData = true;
+        esp32LastError = "";
 
         [
             "voltage",
@@ -1137,15 +1226,26 @@ async function pollEsp32() {
             telemetry.charging = !!x.charging;
         }
 
-        telemetry.updated =
-            x.updated || new Date().toISOString();
+        // Backend timestamps are UTC without a zone suffix.
+        telemetry.updated = x.timestamp
+            ? (x.timestamp.endsWith("Z") ? x.timestamp : x.timestamp + "Z")
+            : new Date().toISOString();
 
         telemetry.power =
             telemetry.voltage * telemetry.current;
 
+        // Only a recent reading counts as a live connection.
+        const age = Date.now() - new Date(telemetry.updated).getTime();
+        esp32Connected = age <= ESP32_STALE_MS;
+
     } catch (error) {
-        console.error("ESP32 error:", error);
-        toast("ESP32 not reachable: " + error.message);
+        esp32Connected = false;
+
+        if (error.message !== esp32LastError) {
+            esp32LastError = error.message;
+            console.warn("ESP32 telemetry:", error.message);
+            toast("ESP32: " + error.message);
+        }
     }
 }
 
@@ -1178,37 +1278,30 @@ async function refreshFleet() {
 
 /* ================= ESP32 SETTINGS ================= */
 
-function saveDeviceUrl() {
-    const input = $("deviceUrl");
+function saveDeviceId() {
+    const input = $("deviceId");
     if (!input) return;
 
     const value = input.value.trim();
 
-    try {
-        const parsed = new URL(value);
+    if (value && !/^[A-Za-z0-9_.:-]{1,50}$/.test(value)) {
+        toast("Device ID may only use letters, numbers, - _ . and :");
+        return;
+    }
 
-        if (
-            parsed.protocol !== "http:" &&
-            parsed.protocol !== "https:"
-        ) {
-            throw new Error("Invalid protocol");
-        }
+    deviceId = value;
+    esp32LastError = "";
 
-        deviceUrl = value;
+    if (value) {
+        localStorage.setItem("voltiq_device_id", value);
+    } else {
+        localStorage.removeItem("voltiq_device_id");
+    }
 
-        localStorage.setItem(
-            "voltiq_device_url",
-            value
-        );
+    toast(value ? "ESP32 device saved." : "Using the most recent ESP32 device.");
 
-        toast("ESP32 endpoint saved.");
-
-        if (VOLTIQ_MODE === "ESP32") {
-            pollEsp32();
-        }
-
-    } catch {
-        toast("Enter a valid full HTTP or HTTPS URL.");
+    if (VOLTIQ_MODE === "ESP32") {
+        pollEsp32().then(() => renderPage(page));
     }
 }
 
@@ -1384,7 +1477,7 @@ window.refreshFleet = refreshFleet;
 window.selectFleetVehicle = selectFleetVehicle;
 window.runFault = runFault;
 window.clearFault = clearFault;
-window.saveDeviceUrl = saveDeviceUrl;
+window.saveDeviceId = saveDeviceId;
 window.downloadReport = downloadReport;
 window.shareBatteryWhatsApp = shareBatteryWhatsApp;
 window.shareBatteryEmail = shareBatteryEmail;
